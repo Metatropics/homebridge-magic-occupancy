@@ -310,7 +310,7 @@ class OccupancyDelay {
             set_value(value);
           }
         });
-      this.switchServices[i].setCharacteristic(Characteristic.On, true);
+      // this.switchServices[i].setCharacteristic(Characteristic.On, true); // Looks like a bug
     }
   }
 
