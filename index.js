@@ -261,6 +261,8 @@ class OccupancyDelay {
    * the "On" state changes on any of the slave Switches.
    */
   checkOccupancy() {
+    this.log(`checking occupancy. Total: ${this.slaveCount}`);
+
     var occupied = 0,
       remaining = this.slaveCount,
       /* callback for when all the switches values have been returend */
@@ -276,19 +278,22 @@ class OccupancyDelay {
         }
 
         // @todo: Set a custom property for how many switches we're waiting for
-        this.log("checkOccupancy: " + occupied);
+        this.log(
+          `checkOccupancy: ${occupied}. Last occupied state: ${this._last_occupied_state}`
+        );
       },
       /*
           callback when we check a switches value. keeps track of the switches
           returned value and decides when to finish the function
         */
       set_value = (value) => {
+        this.log(`Remaining: ${remaining}`);
         remaining -= 1;
         if (value) {
           occupied += 1;
         }
 
-        if (!remaining) {
+        if (remaining === 0) {
           return_occupancy(occupied);
         }
       };
@@ -302,6 +307,7 @@ class OccupancyDelay {
         .getCharacteristic(onCharacteristic)
         .getValue(function (err, value) {
           if (!err) {
+            this.log(`Checking switch ${i}: ${value}`);
             set_value(value);
           }
         });
