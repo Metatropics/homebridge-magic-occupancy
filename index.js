@@ -150,7 +150,7 @@ class MagicOccupancy {
     this.log("Making " + this.statefulSwitchesCount + " Stateful trigger switchServices");
     for (let i = 0, c = this.statefulSwitchesCount; i < c; i += 1) {
       this.switchServices.push((new OccupancyTriggerSwitch(this, {
-          name: "Stateful " + i.toString(),
+          name: "Main Stateful " + i.toString(),
           stateful: true,
           reverse: false,
       }))._service);
@@ -159,7 +159,7 @@ class MagicOccupancy {
     this.log("Making " + this.triggerSwitchesCount + " Trigger trigger switchServices");
     for (let i = 0, c = this.triggerSwitchesCount; i < c; i += 1) {
       this.switchServices.push((new OccupancyTriggerSwitch(this, {
-          name: "Trigger " + i.toString(),
+          name: "Main Trigger " + i.toString(),
           stateful: false,
           reverse: false,
           time: 5000,
