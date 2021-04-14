@@ -271,14 +271,14 @@ class MagicOccupancy {
       };
 
     /* look at all the trigger switchServices "on" characteristic and return to callback */
-    for (const aSwitchService in this.switchServices) {
-      aSwitchService
-        .getCharacteristic(Characteristic.On)
-        .getValue(function (err, value) {
-          if (!err) {
-            set_value(value);
-          }
-        });
+    for (let i = 0; i < this.switchServices.length; i += 1) {
+      this.switchServices[i]
+          .getCharacteristic(Characteristic.On)
+          .getValue(function(err, value) {
+            if (!err) {
+              set_value(value);
+            }
+          });
     }
   }
 
