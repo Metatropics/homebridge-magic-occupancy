@@ -297,7 +297,7 @@ class MagicOccupancy {
         returned value and decides when to finish the function
       */
     var set_value = (value) => {
-      this.log(`Remaining: ${remainingPrimary}, value: ${value}`);
+      this.log(`Remaining Main Switches: ${remainingPrimary}, value: ${value}`);
       remainingPrimary -= 1;
       if (value) {
         occupied += 1;
@@ -308,8 +308,9 @@ class MagicOccupancy {
           return_occupancy(occupied);
         }
 
+        this.log(`Need to review stay-on switches too`);
         var set_stayOn_value = (value) => {
-          this.log(`Remaining: ${remaining}, value: ${value}`);
+          this.log(`Remaining Stay-on Switches: ${remainingStayOn}, value: ${value}`);
           remainingStayOn -= 1;
           if (value) {
             occupied += 1;
