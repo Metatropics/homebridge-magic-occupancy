@@ -320,7 +320,7 @@ class MagicOccupancy {
 class OccupancyTriggerSwitch {
   constructor(occupancySensor, config) {
     this.log = occupancySensor.log;
-    this.occupancySensor = config.occupancySensor;
+    this.occupancySensor = occupancySensor;
     this.name = config.name;
     this.stateful = config.stateful;
     this.reverse = config.reverse;
