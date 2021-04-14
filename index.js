@@ -146,12 +146,12 @@ class MagicOccupancy {
     /* Make the trigger Switches */
     this.log("Making " + this.manualTriggerCount + " manual trigger switches");
     for (let i = 0, c = this.manualTriggerCount; i < c; i += 1) {
-      this.switches.push(this._createSwitch(this, i + 1, true));
+      this.switches.push(this._createSwitch(i + 1, true));
     }
     /* Make the trigger Switches */
     this.log("Making " + this.automaticTriggerCount + " auto trigger switches");
     for (let i = 0, c = this.automaticTriggerCount; i < c; i += 1) {
-      this.switches.push(this._createSwitch(this, i + 1, false));
+      this.switches.push(this._createSwitch(i + 1, false));
     }
   }
 
@@ -293,7 +293,7 @@ class MagicOccupancy {
     var informationService = new Service.AccessoryInformation()
       .setCharacteristic(Characteristic.Manufacturer, "github.com/Jason-Morcos")
       .setCharacteristic(Characteristic.Model, "2")
-      .setCharacteristic(Characteristic.SerialNumber, "JmoMagicOccupancywitch");
+      .setCharacteristic(Characteristic.SerialNumber, "JmoMagicOccupancySwitch");
 
     var services = [this.occupancyService, informationService];
 
@@ -312,18 +312,9 @@ class MagicOccupancy {
    * @returns {Service.Switch|*}
    * @private
    */
-  _createSwitch(occupancySensor, name, stateful) {
-    var displayName = (stateful ? "Manual " : "Auto ") + (name || "").toString(),
-      sw;
-
-    if (displayName.length) {
-      displayName = this.name + " " + displayName;
-    } else {
-      displayName = this.name;
-    }
-
-    return new OccupancyTriggerSwitch(occupancySensor, {
-        name: displayName,
+  _createSwitch(name, stateful) {
+    return new OccupancyTriggerSwitch(this, {
+        name: this.name + (stateful ? "Manual " : "Auto ") + (name || "").toString(),
         stateful: stateful,
         reverse: false,
         time: 1000,
@@ -333,61 +324,64 @@ class MagicOccupancy {
   }
 }
 
+class OccupancyTriggerSwitch {
+  constructor(occupancySensor, config) {
+    this.log = occupancySensor.log;
+    this.occupancySensor = config.occupancySensor;
+    this.name = config.name;
+    this.stateful = config.stateful;
+    this.reverse = config.reverse;
+    this.time = config.time ? config.time : 1000;
+    this.resettable = config.resettable;
+    this.timer = null;
+    this._service = new Service.Switch(this.name);
 
-function OccupancyTriggerSwitch(occupancySensor, config) {
-  this.log = occupancySensor.log;
-  this.occupancySensor = config.occupancySensor;
-  this.name = config.name;
-  this.stateful = config.stateful;
-  this.reverse = config.reverse;
-  this.time = config.time ? config.time : 1000;
-  this.resettable = config.resettable;
-  this.timer = null;
-  this._service = new Service.Switch(this.name);
+    this.cacheDirectory = occupancySensor.cacheDirectory;
+    this.storage = occupancySensor.storage;
 
-  this.cacheDirectory = occupancySensor.cacheDirectory;
-  this.storage = occupancySensor.storage;
+    this._service.getCharacteristic(Characteristic.On)
+      .on('set', this._setOn.bind(this));
 
-  this._service.getCharacteristic(Characteristic.On)
-    .on('set', this._setOn.bind(this));
-
-  if (this.reverse) this._service.setCharacteristic(Characteristic.On, true);
-
-  if (this.stateful) {
-	var cachedState = this.storage.getItemSync(this.name);
-	if((cachedState === undefined) || (cachedState === false)) {
-		this._service.setCharacteristic(Characteristic.On, false);
-	} else {
-		this._service.setCharacteristic(Characteristic.On, true);
-	}
-  }
-}
-
-OccupancyTriggerSwitch.prototype._setOn = function(on, callback) {
-
-  this.log("Setting switch to " + on);
-
-  if (on && !this.reverse && !this.stateful) {
-    if (this.resettable) {
-      clearTimeout(this.timer);
-    }
-    this.timer = setTimeout(function() {
-      this._service.setCharacteristic(Characteristic.On, false);
-    }.bind(this), this.time);
-  } else if (!on && this.reverse && !this.stateful) {
-    if (this.resettable) {
-      clearTimeout(this.timer);
-    }
-    this.timer = setTimeout(function() {
+    if (this.reverse) {
       this._service.setCharacteristic(Characteristic.On, true);
-    }.bind(this), this.time);
+    }
+
+    if (this.stateful) {
+      var cachedState = this.storage.getItemSync(this.name);
+      if((cachedState === undefined) || (cachedState === false)) {
+        this._service.setCharacteristic(Characteristic.On, false);
+      } else {
+        this._service.setCharacteristic(Characteristic.On, true);
+      }
+    }
   }
 
-  if (this.stateful) {
-	  this.storage.setItemSync(this.name, on);
+  _setOn(on, callback) {
+
+    this.log("Setting switch to " + on);
+
+    if (on && !this.reverse && !this.stateful) {
+      if (this.resettable) {
+        clearTimeout(this.timer);
+      }
+      this.timer = setTimeout(function() {
+        this._service.setCharacteristic(Characteristic.On, false);
+      }.bind(this), this.time);
+    } else if (!on && this.reverse && !this.stateful) {
+      if (this.resettable) {
+        clearTimeout(this.timer);
+      }
+      this.timer = setTimeout(function() {
+        this._service.setCharacteristic(Characteristic.On, true);
+      }.bind(this), this.time);
+    }
+
+    if (this.stateful) {
+      this.storage.setItemSync(this.name, on);
+    }
+
+    this.occupancySensor.checkOccupancy();
+
+    callback();
   }
-
-  this.occupancySensor.checkOccupancy();
-
-  callback();
 }
