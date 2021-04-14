@@ -3,10 +3,13 @@
 var inherits = require("util").inherits;
 var Service, Characteristic, HomebridgeAPI;
 
+// OccupancyTriggerSwitch is 100% based on https://github.com/nfarina/homebridge-dummy
+
 module.exports = function (homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
   HomebridgeAPI = homebridge;
+  homebridge.registerAccessory("homebridge-occupancy-delay", "OccupancyTriggerSwitch", OccupancyTriggerSwitch);
 
   /**
    * Characteristic "Time Remaining"
@@ -15,7 +18,7 @@ module.exports = function (homebridge) {
     Characteristic.call(
       this,
       "Time Remaining",
-      "1000006D-0000-1000-8000-0026BB765291"
+      "2000006D-0000-1000-8000-0026BB765291"
     );
     this.setProps({
       format: Characteristic.Formats.UINT64,
@@ -32,7 +35,7 @@ module.exports = function (homebridge) {
     this.value = this.getDefaultValue();
   };
   inherits(Characteristic.TimeRemaining, Characteristic);
-  Characteristic.TimeRemaining.UUID = "1000006D-0000-1000-8000-0026BB765291";
+  Characteristic.TimeRemaining.UUID = "2000006D-0000-1000-8000-0026BB765291";
 
   /**
    * Characteristic "Timeout Delay"
@@ -41,7 +44,7 @@ module.exports = function (homebridge) {
     Characteristic.call(
       this,
       "Timeout Delay",
-      "1100006D-0000-1000-8000-0026BB765291"
+      "2100006D-0000-1000-8000-0026BB765291"
     );
     this.setProps({
       format: Characteristic.Formats.UINT64,
@@ -58,77 +61,47 @@ module.exports = function (homebridge) {
     this.value = this.getDefaultValue();
   };
   inherits(Characteristic.TimeoutDelay, Characteristic);
-  Characteristic.TimeoutDelay.UUID = "1100006D-0000-1000-8000-0026BB765291";
-
-  /**
-   * Characteristic "Enabled", Bool attribute
-   */
-  Characteristic.Enabled = function () {
-    Characteristic.call(this, "Enabled", Characteristic.Enabled.UUID);
-
-    this.setProps({
-      format: Characteristic.Formats.BOOL,
-      perms: [
-        Characteristic.Perms.READ,
-        Characteristic.Perms.NOTIFY,
-        Characteristic.Perms.WRITE,
-      ],
-    });
-  };
-  inherits(Characteristic.Enabled, Characteristic);
-  Characteristic.Enabled.UUID = "79c5cb42-4554-11ea-b071-4bf76b071f47";
-
-  /**
-   * Service CustomSwitch, like switch but with an Enabled Characteristic
-   * so that can't accidentally be controlled through Siri, for instance
-   */
-  Service.CustomSwitch = function (displayName, subtype) {
-    Service.call(this, displayName, Service.CustomSwitch.UUID, subtype);
-    this.addCharacteristic(Characteristic.Enabled);
-  };
-  inherits(Service.CustomSwitch, Service);
-  Service.CustomSwitch.UUID = "0ad4aebe-4555-11ea-bf4b-f30c92b99e11";
+  Characteristic.TimeoutDelay.UUID = "2100006D-0000-1000-8000-0026BB765291";
 
   // Register
   homebridge.registerAccessory(
     "homebridge-occupancy-delay",
-    "OccupancyDelay",
-    OccupancyDelay
+    "MagicOccupancy",
+    MagicOccupancy
   );
 };
 
 /**
- * This accessory publishes an Occupancy Sensor as well as 1 or more slave
- * Switches to control the status of the sensor. If any of the slaves are on
+ * This accessory publishes an Occupancy Sensor as well as 1 or more trigger
+ * Switches to control the status of the sensor. If any of the triggers are on
  * then this sensor registers as "Occupancy Detected" ("Occupied). When all
- * slaves are turned off this will remain "Occupied" for as long as the
+ * triggers are turned off this will remain "Occupied" for as long as the
  * specified delay.
  *
  * Config:
  *
- * name: The name of this Occupancy Sensor and it's slave switches. If there are
- *      more than one slaves they will become "name 1", "name 2", etc.
- * slaveCount (optional): Will create 1 slave Switch with the same name as the
+ * name: The name of this Occupancy Sensor and it's trigger switches. If there are
+ *      more than one triggers they will become "name 1", "name 2", etc.
+ * manualTriggerCount (optional): Will create 1 trigger Switch with the same name as the
  *      Occupancy Sensor by default. Change this if you need more than 1 Switch
  *      to control the sensor.
  * delay: If set to less than 1 there will be no delay when all Switches are
  *      turned to off. Specify a number in seconds and the sensor will wait
  *      that long after all switches have been turned off to become
- *      "Un-occupied". If any slave Switch is turned on the counter will clear
+ *      "Un-occupied". If any trigger Switch is turned on the counter will clear
  *      and start over once all Switches are off again.
  *
  *
  * What can I do with this plugin?
  * @todo: Addd use case and instructions here.
  */
-class OccupancyDelay {
+class MagicOccupancy {
   constructor(log, config) {
     this.log = log;
-    this.name = config.name || "OccupancyDelay";
-    this.slaveCount = Math.max(1, config.slaveCount || 1);
+    this.name = config.name || "MagicOccupancy";
+    this.manualTriggerCount = Math.max(0, config.manualTriggerCount || 1);
+    this.automaticTriggerCount = Math.max(0, config.automaticTriggerCount || 1);
     this.delay = Math.min(3600, Math.max(0, parseInt(config.delay, 10) || 0));
-    this.stateful = config.stateful;
-    this.protect = !!config.protected;
 
     this._timer = null;
     this._timer_started = null;
@@ -171,15 +144,15 @@ class OccupancyDelay {
       forgiveParseErrors: true,
     });
 
-    /* Make the slave Switches */
-    if (1 === this.slaveCount) {
-      this.log("Making a single slave switch");
-      this.switchServices.push(this._createSwitch());
-    } else {
-      this.log("Making " + this.slaveCount + " salve switches");
-      for (let i = 0, c = this.slaveCount; i < c; i += 1) {
-        this.switchServices.push(this._createSwitch(i + 1));
-      }
+    /* Make the trigger Switches */
+    this.log("Making " + this.manualTriggerCount + " manual trigger switches");
+    for (let i = 0, c = this.manualTriggerCount; i < c; i += 1) {
+      this.switchServices.push(this._createSwitch(this, this.log, i + 1, true));
+    }
+    /* Make the trigger Switches */
+    this.log("Making " + this.automaticTriggerCount + " auto trigger switches");
+    for (let i = 0, c = this.automaticTriggerCount; i < c; i += 1) {
+      this.switchServices.push(this._createSwitch(this, this.log, i + 1, false));
     }
   }
 
@@ -256,16 +229,16 @@ class OccupancyDelay {
   }
 
   /**
-   * Checks all the slave Switches to see if any of them are on. If so this
+   * Checks all the trigger Switches to see if any of them are on. If so this
    * Occupancy Sensor will remain "Occupied". This is used as a callback when
-   * the "On" state changes on any of the slave Switches.
+   * the "On" state changes on any of the trigger Switches.
    */
   checkOccupancy() {
-    this.log(`checking occupancy. Total: ${this.slaveCount}`);
+    this.log(`checking occupancy. Total: ${this.switchServices.length}`);
 
-    var occupied = 0,
-      remaining = this.slaveCount,
-      /* callback for when all the switches values have been returend */
+    var occupied = 0;
+    var remaining = this.switchServices.length,
+      /* callback for when all the switches values have been returned */
       return_occupancy = (occupied) => {
         if (occupied) {
           if (this._last_occupied_state === !!occupied) {
@@ -298,19 +271,15 @@ class OccupancyDelay {
         }
       };
 
-    /* look at all the slave switches "on" characteristic and return to callback */
-    const onCharacteristic = this.protect
-      ? Characteristic.Enabled
-      : Characteristic.On;
-    for (let i = 0; i < this.slaveCount; i += 1) {
-      this.switchServices[i]
-        .getCharacteristic(onCharacteristic)
+    /* look at all the trigger switches "on" characteristic and return to callback */
+    for (const aSwitch in this.switchServices) {
+      aSwitch
+        .getCharacteristic(Characteristic.On)
         .getValue(function (err, value) {
           if (!err) {
             set_value(value);
           }
         });
-      // this.switchServices[i].setCharacteristic(Characteristic.On, true); // Looks like a bug
     }
   }
 
@@ -337,8 +306,8 @@ class OccupancyDelay {
    * @returns {Service.Switch|*}
    * @private
    */
-  _createSwitch(name) {
-    var displayName = (name || "").toString(),
+  _createSwitch(occupancySensor, log, name, stateful) {
+    var displayName = (stateful ? "Manual " : "Auto ") + (name || "").toString(),
       sw;
 
     if (displayName.length) {
@@ -347,35 +316,79 @@ class OccupancyDelay {
       displayName = this.name;
     }
 
-    this.log("Create Switch: " + displayName);
-    sw = new Service.Switch(displayName, name);
-
-    let statefulValue = false;
-    if (this.stateful) {
-      const cachedState = this.storage.getItemSync(this.name);
-      if (cachedState === undefined || cachedState === false) {
-        statefulValue = false;
-      } else {
-        statefulValue = true;
-      }
-    }
-
-    if (this.protect) {
-      sw = new Service.CustomSwitch(displayName, name);
-      sw.setCharacteristic(Characteristic.Enabled, statefulValue);
-      sw.getCharacteristic(Characteristic.Enabled).on(
-        "change",
-        this.checkOccupancy.bind(this)
-      );
-    } else {
-      sw = new Service.Switch(displayName, name);
-      sw.setCharacteristic(Characteristic.On, statefulValue);
-      sw.getCharacteristic(Characteristic.On).on(
-        "change",
-        this.checkOccupancy.bind(this)
-      );
-    }
-
-    return sw;
+    return new OccupancyTriggerSwitch({
+        log: log,
+        occupancySensor: occupancySensor,
+        name: displayName,
+        stateful: stateful,
+        reverse: false,
+        time: 1000,
+        resettable: true,
+        timer: null,
+    });
   }
+}
+
+
+function OccupancyTriggerSwitch(config) {
+  this.log = config.log;
+  this.occupancySensor = config.occupancySensor;
+  this.name = config.name;
+  this.stateful = config.stateful;
+  this.reverse = config.reverse;
+  this.time = config.time ? config.time : 1000;
+  this.resettable = config.resettable;
+  this.timer = null;
+  this._service = new Service.Switch(this.name);
+
+  this.cacheDirectory = HomebridgeAPI.user.persistPath();
+  this.storage = require('node-persist');
+  this.storage.initSync({dir:this.cacheDirectory, forgiveParseErrors: true});
+
+  this._service.getCharacteristic(Characteristic.On)
+    .on('set', this._setOn.bind(this));
+
+  if (this.reverse) this._service.setCharacteristic(Characteristic.On, true);
+
+  if (this.stateful) {
+	var cachedState = this.storage.getItemSync(this.name);
+	if((cachedState === undefined) || (cachedState === false)) {
+		this._service.setCharacteristic(Characteristic.On, false);
+	} else {
+		this._service.setCharacteristic(Characteristic.On, true);
+	}
+  }
+}
+
+OccupancyTriggerSwitch.prototype.getServices = function() {
+  return [this._service];
+}
+
+OccupancyTriggerSwitch.prototype._setOn = function(on, callback) {
+
+  this.log("Setting switch to " + on);
+
+  if (on && !this.reverse && !this.stateful) {
+    if (this.resettable) {
+      clearTimeout(this.timer);
+    }
+    this.timer = setTimeout(function() {
+      this._service.setCharacteristic(Characteristic.On, false);
+    }.bind(this), this.time);
+  } else if (!on && this.reverse && !this.stateful) {
+    if (this.resettable) {
+      clearTimeout(this.timer);
+    }
+    this.timer = setTimeout(function() {
+      this._service.setCharacteristic(Characteristic.On, true);
+    }.bind(this), this.time);
+  }
+
+  if (this.stateful) {
+	  this.storage.setItemSync(this.name, on);
+  }
+
+  this.occupancySensor.checkOccupancy();
+
+  callback();
 }

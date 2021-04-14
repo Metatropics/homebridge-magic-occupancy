@@ -1,0 +1,33 @@
+{
+    "pluginAlias": "MagicOccupancy",
+    "pluginType": "accessory",
+    "schema": {
+        "properties": {
+            "automaticTriggerCount": {
+                "default": 1000,
+                "description": "How many auto motion-triggered switches you want to create",
+                "title": "Number of Automatic Switches",
+                "type": "number"
+            },
+            "delay": {
+                "default": 1000,
+                "description": "How long in seconds the room should stay occupied after all switches turn off",
+                "title": "Stay Occupied Delay",
+                "type": "number"
+            },
+            "manualTriggerCount": {
+                "default": 1000,
+                "description": "How many manual on switches you want to create",
+                "title": "Number of Manual Switches",
+                "type": "number"
+            },
+            "name": {
+                "required": true,
+                "title": "Name",
+                "type": "string"
+            }
+        },
+        "type": "object"
+    },
+    "singular": false
+}
