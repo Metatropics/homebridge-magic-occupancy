@@ -9,7 +9,6 @@ module.exports = function (homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
   HomebridgeAPI = homebridge;
-  homebridge.registerAccessory("homebridge-magic-occupancy", "OccupancyTriggerSwitch", OccupancyTriggerSwitch);
 
   /**
    * Characteristic "Time Remaining"
@@ -110,7 +109,7 @@ class MagicOccupancy {
     this._interval_last_value = 0;
     this._last_occupied_state = false;
 
-    this.switchServices = [];
+    this.switches = [];
     this.occupancyService = new Service.OccupancySensor(this.name);
 
     this.occupancyService.addCharacteristic(Characteristic.TimeoutDelay);
@@ -147,12 +146,12 @@ class MagicOccupancy {
     /* Make the trigger Switches */
     this.log("Making " + this.manualTriggerCount + " manual trigger switches");
     for (let i = 0, c = this.manualTriggerCount; i < c; i += 1) {
-      this.switchServices.push(this._createSwitch(this, this.log, i + 1, true));
+      this.switches.push(this._createSwitch(this, i + 1, true));
     }
     /* Make the trigger Switches */
     this.log("Making " + this.automaticTriggerCount + " auto trigger switches");
     for (let i = 0, c = this.automaticTriggerCount; i < c; i += 1) {
-      this.switchServices.push(this._createSwitch(this, this.log, i + 1, false));
+      this.switches.push(this._createSwitch(this, i + 1, false));
     }
   }
 
@@ -234,10 +233,10 @@ class MagicOccupancy {
    * the "On" state changes on any of the trigger Switches.
    */
   checkOccupancy() {
-    this.log(`checking occupancy. Total: ${this.switchServices.length}`);
+    this.log(`checking occupancy. Total: ${this.switches.length}`);
 
     var occupied = 0;
-    var remaining = this.switchServices.length,
+    var remaining = this.switches.length,
       /* callback for when all the switches values have been returned */
       return_occupancy = (occupied) => {
         if (occupied) {
@@ -272,8 +271,9 @@ class MagicOccupancy {
       };
 
     /* look at all the trigger switches "on" characteristic and return to callback */
-    for (const aSwitch in this.switchServices) {
+    for (const aSwitch in this.switches) {
       aSwitch
+        ._service
         .getCharacteristic(Characteristic.On)
         .getValue(function (err, value) {
           if (!err) {
@@ -291,11 +291,17 @@ class MagicOccupancy {
    */
   getServices() {
     var informationService = new Service.AccessoryInformation()
-      .setCharacteristic(Characteristic.Manufacturer, "github.com/archanglmr")
-      .setCharacteristic(Characteristic.Model, "1.0.2")
-      .setCharacteristic(Characteristic.SerialNumber, "20201006");
+      .setCharacteristic(Characteristic.Manufacturer, "github.com/Jason-Morcos")
+      .setCharacteristic(Characteristic.Model, "2")
+      .setCharacteristic(Characteristic.SerialNumber, "JmoMagicOccupancywitch");
 
-    return [this.occupancyService, informationService, ...this.switchServices];
+    var services = [this.occupancyService, informationService];
+
+    for (const aSwitch in this.switches) {
+      services.push(aSwitch._service);
+    }
+
+    return services;
   }
 
   /**
@@ -306,7 +312,7 @@ class MagicOccupancy {
    * @returns {Service.Switch|*}
    * @private
    */
-  _createSwitch(occupancySensor, log, name, stateful) {
+  _createSwitch(occupancySensor, name, stateful) {
     var displayName = (stateful ? "Manual " : "Auto ") + (name || "").toString(),
       sw;
 
@@ -316,9 +322,7 @@ class MagicOccupancy {
       displayName = this.name;
     }
 
-    return new OccupancyTriggerSwitch({
-        log: log,
-        occupancySensor: occupancySensor,
+    return new OccupancyTriggerSwitch(occupancySensor, {
         name: displayName,
         stateful: stateful,
         reverse: false,
@@ -330,8 +334,8 @@ class MagicOccupancy {
 }
 
 
-function OccupancyTriggerSwitch(config) {
-  this.log = config.log;
+function OccupancyTriggerSwitch(occupancySensor, config) {
+  this.log = occupancySensor.log;
   this.occupancySensor = config.occupancySensor;
   this.name = config.name;
   this.stateful = config.stateful;
@@ -341,9 +345,8 @@ function OccupancyTriggerSwitch(config) {
   this.timer = null;
   this._service = new Service.Switch(this.name);
 
-  this.cacheDirectory = HomebridgeAPI.user.persistPath();
-  this.storage = require('node-persist');
-  this.storage.initSync({dir:this.cacheDirectory, forgiveParseErrors: true});
+  this.cacheDirectory = occupancySensor.cacheDirectory;
+  this.storage = occupancySensor.storage;
 
   this._service.getCharacteristic(Characteristic.On)
     .on('set', this._setOn.bind(this));
@@ -358,10 +361,6 @@ function OccupancyTriggerSwitch(config) {
 		this._service.setCharacteristic(Characteristic.On, true);
 	}
   }
-}
-
-OccupancyTriggerSwitch.prototype.getServices = function() {
-  return [this._service];
 }
 
 OccupancyTriggerSwitch.prototype._setOn = function(on, callback) {
