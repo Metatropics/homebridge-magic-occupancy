@@ -1,5 +1,5 @@
 {
-  "name": "homebridge-occupancy-delay",
+  "name": "homebridge-magic-occupancy",
   "version": "1.0.2",
   "description": "Occupancy sensor linked to one or more switches with a built-in not-unoccupied delay for Homebridge: https://github.com/nfarina/homebridge",
   "main": "index.js",
@@ -13,12 +13,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/archanglmr/homebridge-occupancy-delay.git"
+    "url": "https://github.com/archanglmr/homebridge-magic-occupancy.git"
   },
   "engines": {
     "homebridge": ">=0.2.5"
   },
   "dependencies": {
-     "node-persist": "^2.1.0"
+    "node-persist": "^2.1.0"
   }
 }

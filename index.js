@@ -9,7 +9,7 @@ module.exports = function (homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
   HomebridgeAPI = homebridge;
-  homebridge.registerAccessory("homebridge-occupancy-delay", "OccupancyTriggerSwitch", OccupancyTriggerSwitch);
+  homebridge.registerAccessory("homebridge-magic-occupancy", "OccupancyTriggerSwitch", OccupancyTriggerSwitch);
 
   /**
    * Characteristic "Time Remaining"
@@ -65,7 +65,7 @@ module.exports = function (homebridge) {
 
   // Register
   homebridge.registerAccessory(
-    "homebridge-occupancy-delay",
+    "homebridge-magic-occupancy",
     "MagicOccupancy",
     MagicOccupancy
   );

@@ -3,7 +3,7 @@
 
 ## How to install
 
- ```sudo npm install -g homebridge-occupancy-delay```
+ ```sudo npm install -g homebridge-magic-occupancy```
 
 ## Example config.json:
 
