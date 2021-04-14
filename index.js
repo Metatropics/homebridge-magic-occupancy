@@ -81,14 +81,14 @@ module.exports = function (homebridge) {
  *
  * name: The name of this Occupancy Sensor and it's trigger switches. If there are
  *      more than one triggers they will become "name 1", "name 2", etc.
- * manualTriggerCount (optional): Will create 1 trigger Switch with the same name as the
+ * statefulSwitchesCount (optional): Will create 1 trigger Switch with the same name as the
  *      Occupancy Sensor by default. Change this if you need more than 1 Switch
  *      to control the sensor.
  * delay: If set to less than 1 there will be no delay when all Switches are
  *      turned to off. Specify a number in seconds and the sensor will wait
  *      that long after all switches have been turned off to become
  *      "Un-occupied". If any trigger Switch is turned on the counter will clear
- *      and start over once all Switches are off again.
+ *      and startUnoccupiedDelay over once all Switches are off again.
  *
  *
  * What can I do with this plugin?
@@ -98,8 +98,10 @@ class MagicOccupancy {
   constructor(log, config) {
     this.log = log;
     this.name = config.name || "MagicOccupancy";
-    this.manualTriggerCount = Math.max(0, config.manualTriggerCount || 1);
-    this.automaticTriggerCount = Math.max(0, config.automaticTriggerCount || 1);
+    this.statefulSwitchesCount = Math.max(0, config.statefulSwitchesCount || 1);
+    this.triggerSwitchesCount = Math.max(0, config.triggerSwitchesCount || 1);
+    this.statefulStayOnSwitchesCount = Math.max(0, config.statefulSwitchesCount || 1);
+    this.triggerStayOnSwitchesCount = Math.max(0, config.triggerSwitchesCount || 1);
     this.delay = Math.min(3600, Math.max(0, parseInt(config.delay, 10) || 0));
 
     this._timer = null;
@@ -110,6 +112,7 @@ class MagicOccupancy {
     this._last_occupied_state = false;
 
     this.switchServices = [];
+    this.stayOnServices = [];
     this.occupancyService = new Service.OccupancySensor(this.name);
 
     this.occupancyService.addCharacteristic(Characteristic.TimeoutDelay);
@@ -143,25 +146,56 @@ class MagicOccupancy {
       forgiveParseErrors: true,
     });
 
-    /* Make the trigger switchServices */
-    this.log("Making " + this.manualTriggerCount + " manual trigger switchServices");
-    for (let i = 0, c = this.manualTriggerCount; i < c; i += 1) {
-      this.switchServices.push(this._createSwitch(i + 1, true)._service);
+    /* Make the statefulSwitches */
+    this.log("Making " + this.statefulSwitchesCount + " Stateful trigger switchServices");
+    for (let i = 0, c = this.statefulSwitchesCount; i < c; i += 1) {
+      this.switchServices.push((new OccupancyTriggerSwitch(this, {
+          name: "Stateful " + i.toString(),
+          stateful: true,
+          reverse: false,
+      }))._service);
     }
-    /* Make the trigger switchServices */
-    this.log("Making " + this.automaticTriggerCount + " auto trigger switchServices");
-    for (let i = 0, c = this.automaticTriggerCount; i < c; i += 1) {
-      this.switchServices.push(this._createSwitch(i + 1, false)._service);
+    /* Make the triggerSwitches */
+    this.log("Making " + this.triggerSwitchesCount + " Trigger trigger switchServices");
+    for (let i = 0, c = this.triggerSwitchesCount; i < c; i += 1) {
+      this.switchServices.push((new OccupancyTriggerSwitch(this, {
+          name: "Trigger " + i.toString(),
+          stateful: false,
+          reverse: false,
+          time: 5000,
+          resettable: false,
+      }))._service);
+    }
+
+    /* Make the statefulStayOnSwitches */
+    this.log("Making " + this.statefulStayOnSwitchesCount + " Stateful trigger switchServices");
+    for (let i = 0, c = this.statefulStayOnSwitchesCount; i < c; i += 1) {
+      this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
+          name: "StayOn Stateful " + i.toString(),
+          stateful: true,
+          reverse: false,
+      }))._service);
+    }
+    /* Make the triggerStayOnSwitches */
+    this.log("Making " + this.triggerStayOnSwitchesCount + " Trigger trigger switchServices");
+    for (let i = 0, c = this.triggerStayOnSwitchesCount; i < c; i += 1) {
+      this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
+          name: "StayOn Trigger " + i.toString(),
+          stateful: false,
+          reverse: false,
+          time: 5000,
+          resettable: false,
+      }))._service);
     }
   }
 
   /**
-   * Starts the countdown timer.
+   * startUnoccupiedDelays the countdown timer.
    */
-  start() {
+  startUnoccupiedDelay() {
     this.stop();
     this._timer_started = new Date().getTime();
-    this.log("Timer started:", this.delay);
+    this.log("Timer startUnoccupiedDelayed:", this.delay);
     if (this.delay) {
       this._timer = setTimeout(
         this.setOccupancyNotDetected.bind(this),
@@ -202,6 +236,7 @@ class MagicOccupancy {
   }
 
   setOccupancyDetected() {
+    this.stop();
     this._last_occupied_state = true;
     this.occupancyService.setCharacteristic(
       Characteristic.OccupancyDetected,
@@ -236,39 +271,67 @@ class MagicOccupancy {
     this.log(`checking occupancy. Total: ${this.switchServices.length}`);
 
     var occupied = 0;
-    var remaining = this.switchServices.length,
-      /* callback for when all the switchServices values have been returned */
-      return_occupancy = (occupied) => {
-        if (occupied) {
-          if (this._last_occupied_state === !!occupied) {
-            this.stop();
-          } else {
-            this.setOccupancyDetected();
-          }
-        } else if (null === this._timer) {
-          this.start();
-        }
+    var remainingPrimary = this.switchServices.length;
+    var remainingStayOn = this.stayOnServices.length;
 
-        // @todo: Set a custom property for how many switchServices we're waiting for
-        this.log(
-          `checkOccupancy: ${occupied}. Last occupied state: ${this._last_occupied_state}`
-        );
-      },
-      /*
-          callback when we check a switchServices value. keeps track of the switchServices
-          returned value and decides when to finish the function
-        */
-      set_value = (value) => {
-        this.log(`Remaining: ${remaining}, value: ${value}`);
-        remaining -= 1;
-        if (value) {
-          occupied += 1;
+    /* callback for when all the switchServices values have been returned */
+    var return_occupancy = (occupied) => {
+      if (occupied > 0) {
+        if (this._last_occupied_state !== true) {
+          this.setOccupancyDetected();
         }
+      } else if (this._timer === null) {
+        if (this._last_occupied_state !== false) {
+          this.startUnoccupiedDelay();
+        }
+      }
 
-        if (remaining === 0) {
+      // @todo: Set a custom property for how many switchServices we're waiting for
+      this.log(
+        `checkOccupancy: ${occupied}. Last occupied state: ${this._last_occupied_state}`
+      );
+    };
+
+    /*
+        callback when we check a switchServices value. keeps track of the switchServices
+        returned value and decides when to finish the function
+      */
+    var set_value = (value) => {
+      this.log(`Remaining: ${remainingPrimary}, value: ${value}`);
+      remainingPrimary -= 1;
+      if (value) {
+        occupied += 1;
+      }
+
+      if (remainingPrimary <= 0) {
+        if(occupied === true || this._last_occupied_state === false || this.stayOnServices.length <= 0) {
           return_occupancy(occupied);
         }
-      };
+
+        var set_stayOn_value = (value) => {
+          this.log(`Remaining: ${remaining}, value: ${value}`);
+          remainingStayOn -= 1;
+          if (value) {
+            occupied += 1;
+          }
+
+          if (remainingStayOn <= 0) {
+            return_occupancy(occupied);
+          }
+        };
+
+        /* look at all the trigger switchServices "on" characteristic and return to callback */
+        for (let i = 0; i < this.stayOnServices.length; i += 1) {
+          this.stayOnServices[i]
+              .getCharacteristic(Characteristic.On)
+              .getValue(function(err, value) {
+                if (!err) {
+                  set_stayOn_value(value);
+                }
+              });
+        }
+      }
+    };
 
     /* look at all the trigger switchServices "on" characteristic and return to callback */
     for (let i = 0; i < this.switchServices.length; i += 1) {
@@ -279,6 +342,10 @@ class MagicOccupancy {
               set_value(value);
             }
           });
+    }
+
+    if(this.switchServices.length == 0) {
+      set_value(false);
     }
   }
 
@@ -294,26 +361,7 @@ class MagicOccupancy {
       .setCharacteristic(Characteristic.Model, "2")
       .setCharacteristic(Characteristic.SerialNumber, "JmoMagicOccupancySwitch");
 
-    return [this.occupancyService, informationService, ...this.switchServices];
-  }
-
-  /**
-   * Internal helper function to create a new "Switch" that is ties to the
-   * status of this Occupancy Snesor.
-   *
-   * @param name
-   * @returns {Service.Switch|*}
-   * @private
-   */
-  _createSwitch(name, stateful) {
-    return new OccupancyTriggerSwitch(this, {
-        name: this.name + (stateful ? "Manual " : "Auto ") + (name || "").toString(),
-        stateful: stateful,
-        reverse: false,
-        time: 1000,
-        resettable: true,
-        timer: null,
-    });
+    return [this.occupancyService, informationService, ...this.switchServices, ...this.stayOnServices];
   }
 }
 
@@ -321,13 +369,13 @@ class OccupancyTriggerSwitch {
   constructor(occupancySensor, config) {
     this.log = occupancySensor.log;
     this.occupancySensor = occupancySensor;
-    this.name = config.name;
+    this.name = occupancySensor.name + ": " + config.name;
     this.stateful = config.stateful;
     this.reverse = config.reverse;
     this.time = config.time ? config.time : 1000;
     this.resettable = config.resettable;
     this.timer = null;
-    this._service = new Service.Switch(this.name, this.name);
+    this._service = new Service.Switch(config.name, this.name);
 
     this.cacheDirectory = occupancySensor.cacheDirectory;
     this.storage = occupancySensor.storage;
@@ -359,6 +407,7 @@ class OccupancyTriggerSwitch {
       }
       this.timer = setTimeout(function() {
         this._service.setCharacteristic(Characteristic.On, false);
+        this.occupancySensor.checkOccupancy();
       }.bind(this), this.time);
     } else if (!on && this.reverse && !this.stateful) {
       if (this.resettable) {
@@ -366,6 +415,7 @@ class OccupancyTriggerSwitch {
       }
       this.timer = setTimeout(function() {
         this._service.setCharacteristic(Characteristic.On, true);
+        this.occupancySensor.checkOccupancy();
       }.bind(this), this.time);
     }
 

@@ -13,8 +13,8 @@
           "accessory": "MagicOccupancy",
           "name": "MagicOccupancy",
           "delay": 5,
-          "manualTriggerCount": 1,
-          "automaticTriggerCount": 1,
+          "statefulSwitchesCount": 1,
+          "triggerSwitchesCount": 1,
           "protected": false
         }
     ]
