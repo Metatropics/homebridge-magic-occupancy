@@ -408,7 +408,9 @@ class OccupancyTriggerSwitch {
       }
       this.timer = setTimeout(function() {
         this._service.setCharacteristic(Characteristic.On, false);
-        this.occupancySensor.checkOccupancy();
+        setTimeout(function() {
+          this.occupancySensor.checkOccupancy();
+        }.bind(this), 100);
       }.bind(this), this.time);
     } else if (!on && this.reverse && !this.stateful) {
       if (this.resettable) {
@@ -416,7 +418,9 @@ class OccupancyTriggerSwitch {
       }
       this.timer = setTimeout(function() {
         this._service.setCharacteristic(Characteristic.On, true);
-        this.occupancySensor.checkOccupancy();
+        setTimeout(function() {
+          this.occupancySensor.checkOccupancy();
+        }.bind(this), 100);
       }.bind(this), this.time);
     }
 
@@ -424,7 +428,10 @@ class OccupancyTriggerSwitch {
       this.storage.setItemSync(this.name, on);
     }
 
-    this.occupancySensor.checkOccupancy();
+    setTimeout(function() {
+      this.occupancySensor.checkOccupancy();
+    }.bind(this), 100);
+
 
     callback();
   }
