@@ -327,7 +327,7 @@ class OccupancyTriggerSwitch {
     this.time = config.time ? config.time : 1000;
     this.resettable = config.resettable;
     this.timer = null;
-    this._service = new Service.Switch(this.name);
+    this._service = new Service.Switch(this.name, this.name);
 
     this.cacheDirectory = occupancySensor.cacheDirectory;
     this.storage = occupancySensor.storage;
