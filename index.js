@@ -109,7 +109,7 @@ class MagicOccupancy {
     this._interval_last_value = 0;
     this._last_occupied_state = false;
 
-    this.switches = [];
+    this.switchServices = [];
     this.occupancyService = new Service.OccupancySensor(this.name);
 
     this.occupancyService.addCharacteristic(Characteristic.TimeoutDelay);
@@ -143,15 +143,15 @@ class MagicOccupancy {
       forgiveParseErrors: true,
     });
 
-    /* Make the trigger Switches */
-    this.log("Making " + this.manualTriggerCount + " manual trigger switches");
+    /* Make the trigger switchServices */
+    this.log("Making " + this.manualTriggerCount + " manual trigger switchServices");
     for (let i = 0, c = this.manualTriggerCount; i < c; i += 1) {
-      this.switches.push(this._createSwitch(i + 1, true));
+      this.switchServices.push(this._createSwitch(i + 1, true)._service);
     }
-    /* Make the trigger Switches */
-    this.log("Making " + this.automaticTriggerCount + " auto trigger switches");
+    /* Make the trigger switchServices */
+    this.log("Making " + this.automaticTriggerCount + " auto trigger switchServices");
     for (let i = 0, c = this.automaticTriggerCount; i < c; i += 1) {
-      this.switches.push(this._createSwitch(i + 1, false));
+      this.switchServices.push(this._createSwitch(i + 1, false)._service);
     }
   }
 
@@ -228,16 +228,16 @@ class MagicOccupancy {
   }
 
   /**
-   * Checks all the trigger Switches to see if any of them are on. If so this
+   * Checks all the trigger switchServices to see if any of them are on. If so this
    * Occupancy Sensor will remain "Occupied". This is used as a callback when
-   * the "On" state changes on any of the trigger Switches.
+   * the "On" state changes on any of the trigger switchServices.
    */
   checkOccupancy() {
-    this.log(`checking occupancy. Total: ${this.switches.length}`);
+    this.log(`checking occupancy. Total: ${this.switchServices.length}`);
 
     var occupied = 0;
-    var remaining = this.switches.length,
-      /* callback for when all the switches values have been returned */
+    var remaining = this.switchServices.length,
+      /* callback for when all the switchServices values have been returned */
       return_occupancy = (occupied) => {
         if (occupied) {
           if (this._last_occupied_state === !!occupied) {
@@ -249,13 +249,13 @@ class MagicOccupancy {
           this.start();
         }
 
-        // @todo: Set a custom property for how many switches we're waiting for
+        // @todo: Set a custom property for how many switchServices we're waiting for
         this.log(
           `checkOccupancy: ${occupied}. Last occupied state: ${this._last_occupied_state}`
         );
       },
       /*
-          callback when we check a switches value. keeps track of the switches
+          callback when we check a switchServices value. keeps track of the switchServices
           returned value and decides when to finish the function
         */
       set_value = (value) => {
@@ -270,10 +270,9 @@ class MagicOccupancy {
         }
       };
 
-    /* look at all the trigger switches "on" characteristic and return to callback */
-    for (const aSwitch in this.switches) {
-      aSwitch
-        ._service
+    /* look at all the trigger switchServices "on" characteristic and return to callback */
+    for (const aSwitchService in this.switchServices) {
+      aSwitchService
         .getCharacteristic(Characteristic.On)
         .getValue(function (err, value) {
           if (!err) {
@@ -295,13 +294,7 @@ class MagicOccupancy {
       .setCharacteristic(Characteristic.Model, "2")
       .setCharacteristic(Characteristic.SerialNumber, "JmoMagicOccupancySwitch");
 
-    var services = [this.occupancyService, informationService];
-
-    for (const aSwitch in this.switches) {
-      services.push(aSwitch._service);
-    }
-
-    return services;
+    return [this.occupancyService, informationService, ...this.switchServices];
   }
 
   /**
