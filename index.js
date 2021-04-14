@@ -373,7 +373,7 @@ class OccupancyTriggerSwitch {
       this.storage.setItemSync(this.name, on);
     }
 
-    this.occupancySensor.call('checkOccupancy');
+    this.occupancySensor.checkOccupancy();
 
     callback();
   }
