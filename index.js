@@ -385,7 +385,7 @@ class OccupancyTriggerSwitch {
   constructor(occupancySensor, config) {
     this.log = occupancySensor.log;
     this.occupancySensor = occupancySensor;
-    this.name = occupancySensor.name + ": " + config.name;
+    this.name = occupancySensor.name + " " + config.name;
     this.stateful = config.stateful;
     this.reverse = config.reverse;
     this.time = config.time ? config.time : 1000;
