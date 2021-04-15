@@ -487,11 +487,12 @@ class MasterShutoffSwitch {
     this.log = occupancySensor.log;
     this.occupancySensor = occupancySensor;
     this.name = occupancySensor.name + " Master Shutoff";
+    this._service = new Service.Switch(this.name, this.name);
 
     this.cacheDirectory = occupancySensor.cacheDirectory;
     this.storage = occupancySensor.storage;
 
-    this._service.setCharacteristic(Characteristic.On, true);
+    this._service.setCharacteristic(Characteristic.On, false);
     this._service.getCharacteristic(Characteristic.On)
       .on('set', this._setOn.bind(this));
 
@@ -501,13 +502,13 @@ class MasterShutoffSwitch {
 
     this.log("Setting master shutoff switch to " + on);
 
-    if(!on) {
+    if(on) {
       setTimeout(function() {
         this.occupancySensor.setOccupancyNotDetected();
       }.bind(this), 0);
 
       setTimeout(function() {
-        this._service.setCharacteristic(Characteristic.On, true);
+        this._service.setCharacteristic(Characteristic.On, false);
       }.bind(this), 1000);
     }
 
