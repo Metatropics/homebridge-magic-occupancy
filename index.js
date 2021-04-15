@@ -360,7 +360,7 @@ class MagicOccupancy {
    */
   getServices() {
     var informationService = new Service.AccessoryInformation()
-      .setCharacteristic(Characteristic.Manufacturer, "github.com/Jason-Morcos")
+      .setCharacteristic(Characteristic.Manufacturer, "https://github.com/Jason-Morcos/homebridge-magic-occupancy")
       .setCharacteristic(Characteristic.Model, "2")
       .setCharacteristic(Characteristic.SerialNumber, "JmoMagicOccupancySwitch");
 
@@ -378,7 +378,7 @@ class OccupancyTriggerSwitch {
     this.time = config.time ? config.time : 1000;
     this.resettable = config.resettable;
     this.timer = null;
-    this._service = new Service.Switch(config.name, this.name);
+    this._service = new Service.Switch(this.name, this.name);
 
     this.cacheDirectory = occupancySensor.cacheDirectory;
     this.storage = occupancySensor.storage;
