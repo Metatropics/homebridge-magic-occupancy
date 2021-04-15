@@ -15,7 +15,6 @@
                 "type": "number"
             },
             "maxOccupationTimeout": {
-                "default": null,
                 "description": "How long in seconds is the absolute max time a room can stay occupied for (regardless of switch activity). Set 0 or blank to run forever.",
                 "title": "Absolute Max Occupation Time (auto-shutoff)",
                 "type": "number"
