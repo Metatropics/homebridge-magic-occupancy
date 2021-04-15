@@ -133,7 +133,7 @@ class MagicOccupancy {
     });
 
     /* Make the statefulSwitches */
-    this.log("Making " + this.statefulSwitchesCount + " Stateful trigger switchServices");
+    this.log.debug("Making " + this.statefulSwitchesCount + " Stateful trigger switchServices");
     for (let i = 0, c = this.statefulSwitchesCount; i < c; i += 1) {
       this.switchServices.push((new OccupancyTriggerSwitch(this, {
           name: "Main Stateful " + i.toString(),
@@ -142,7 +142,7 @@ class MagicOccupancy {
       }))._service);
     }
     /* Make the triggerSwitches */
-    this.log("Making " + this.triggerSwitchesCount + " Trigger trigger switchServices");
+    this.log.debug("Making " + this.triggerSwitchesCount + " Trigger trigger switchServices");
     for (let i = 0, c = this.triggerSwitchesCount; i < c; i += 1) {
       this.switchServices.push((new OccupancyTriggerSwitch(this, {
           name: "Main Trigger " + i.toString(),
@@ -154,7 +154,7 @@ class MagicOccupancy {
     }
 
     /* Make the statefulStayOnSwitches */
-    this.log("Making " + this.statefulStayOnSwitchesCount + " Stateful trigger switchServices");
+    this.log.debug("Making " + this.statefulStayOnSwitchesCount + " StayOn Stateful trigger switchServices");
     for (let i = 0, c = this.statefulStayOnSwitchesCount; i < c; i += 1) {
       this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
           name: "StayOn Stateful " + i.toString(),
@@ -163,7 +163,7 @@ class MagicOccupancy {
       }))._service);
     }
     /* Make the triggerStayOnSwitches */
-    this.log("Making " + this.triggerStayOnSwitchesCount + " Trigger trigger switchServices");
+    this.log.debug("Making " + this.triggerStayOnSwitchesCount + " StayOn Trigger trigger switchServices");
     for (let i = 0, c = this.triggerStayOnSwitchesCount; i < c; i += 1) {
       this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
           name: "StayOn Trigger " + i.toString(),
@@ -291,7 +291,7 @@ class MagicOccupancy {
    * the "On" state changes on any of the trigger switchServices.
    */
   checkOccupancy() {
-    this.log(`checking occupancy. Total: ${this.switchServices.length}`);
+    this.log.debug(`checking occupancy. Total: ${this.switchServices.length}`);
 
     var occupied = 0;
     var remainingPrimary = this.switchServices.length;
@@ -311,7 +311,7 @@ class MagicOccupancy {
 
       // @todo: Set a custom property for how many switchServices we're waiting for
       this.log(
-        `checkOccupancy: ${occupied}. Last occupied state: ${this._last_occupied_state}`
+        `checkOccupancy result: ${occupied}. Last occupied state: ${this._last_occupied_state}`
       );
     };
 
@@ -320,7 +320,7 @@ class MagicOccupancy {
         returned value and decides when to finish the function
       */
     var set_value = (value) => {
-      this.log(`Remaining Main Switches: ${remainingPrimary}, value: ${value}`);
+      this.log.debug(`Remaining Main Switches: ${remainingPrimary}, value: ${value}`);
       remainingPrimary -= 1;
       if (value) {
         occupied += 1;
@@ -332,9 +332,9 @@ class MagicOccupancy {
           return;
         }
 
-        this.log(`Need to review stay-on switches too`);
+        this.log.debug(`Need to review stay-on switches too`);
         var set_stayOn_value = (value) => {
-          this.log(`Remaining Stay-on Switches: ${remainingStayOn}, value: ${value}`);
+          this.log.debug(`Remaining Stay-on Switches: ${remainingStayOn}, value: ${value}`);
           remainingStayOn -= 1;
           if (value) {
             occupied += 1;
@@ -431,7 +431,7 @@ class OccupancyTriggerSwitch {
       this.occupancySensor.wasTurnedOnByTriggerSwitch = !this.stateful;
     }
 
-    this.log("Setting switch to " + on);
+    this.log.debug("Setting switch " + this.name + " to " + on);
 
     if (on && !this.reverse && !this.stateful) {
       if (this.resettable) {
@@ -465,7 +465,7 @@ class OccupancyTriggerSwitch {
 
     // IF OCCUPANCY WAS TRIGGERED BY MOTION, STATEFUL SWITCHES ARE DISABLED AND TREATED STATELESS
     if(this.stateful && this.occupancySensor.wasTurnedOnByTriggerSwitch && this.occupancySensor.ignoreStatefulIfTurnedOnByTrigger && on) {
-      this.log("Treating stateful action as trigger due to wasTurnedOnByTriggerSwitch and ignoreStatefulIfTurnedOnByTrigger");
+      this.log("Treating stateful action to " + this.name + " as trigger due to wasTurnedOnByTriggerSwitch and ignoreStatefulIfTurnedOnByTrigger");
       setTimeout(function() {
         this._service.setCharacteristic(Characteristic.On, false);
       }.bind(this), 1000);

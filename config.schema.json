@@ -53,7 +53,7 @@
             "createMasterShutoff": {
                 "required": true,
                 "default": true,
-                "description": "Whether or not to create a master shutoff switch. Master shutoff toggled off kills occupancy immediately",
+                "description": "Whether or not to create a master shutoff switch. Master shutoff toggled off kills occupancy immediately when toggled on.",
                 "title": "Create Master Shutoff",
                 "type": "boolean"
             }
