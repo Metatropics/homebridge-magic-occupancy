@@ -8,10 +8,16 @@
                 "title": "Name",
                 "type": "string"
             },
-            "delay": {
+            "stayOccupiedDelay": {
                 "default": 60,
-                "description": "How long in seconds the room should stay occupied after all switches turn off",
+                "description": "How long in seconds the room should stay occupied after all switches turn off. Set 0 to shutoff as soon as not occupied.",
                 "title": "Stay Occupied Delay",
+                "type": "number"
+            },
+            "maxOccupationTimeout": {
+                "default": null,
+                "description": "How long in seconds is the absolute max time a room can stay occupied for (regardless of switch activity). Set 0 or blank to run forever.",
+                "title": "Absolute Max Occupation Time (auto-shutoff)",
                 "type": "number"
             },
             "statefulSwitchesCount": {
@@ -37,6 +43,13 @@
                 "description": "These switches will reset the delay if the occupancy sensor is already on, or they will do nothing if not occupied already.",
                 "title": "Number of Trigger Stateless Stay-on Switches",
                 "type": "number"
+            },
+            "ignoreStatefulIfTurnedOnByTrigger": {
+                "required": true,
+                "default": true,
+                "description": "Whether or not stateful switches should be treated like trigger switches if occupation was turned on by a trigger switch.",
+                "title": "Ignore Stateful if Turned On By Trigger",
+                "type": "boolean"
             }
         },
         "type": "object"

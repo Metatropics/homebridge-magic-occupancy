@@ -42,7 +42,7 @@ module.exports = function (homebridge) {
   Characteristic.TimeoutDelay = function () {
     Characteristic.call(
       this,
-      "Timeout Delay",
+      "Post-Activity Timeout Delay",
       "2100006D-0000-1000-8000-0026BB765291"
     );
     this.setProps({
@@ -70,30 +70,6 @@ module.exports = function (homebridge) {
   );
 };
 
-/**
- * This accessory publishes an Occupancy Sensor as well as 1 or more trigger
- * Switches to control the status of the sensor. If any of the triggers are on
- * then this sensor registers as "Occupancy Detected" ("Occupied). When all
- * triggers are turned off this will remain "Occupied" for as long as the
- * specified delay.
- *
- * Config:
- *
- * name: The name of this Occupancy Sensor and it's trigger switches. If there are
- *      more than one triggers they will become "name 1", "name 2", etc.
- * statefulSwitchesCount (optional): Will create 1 trigger Switch with the same name as the
- *      Occupancy Sensor by default. Change this if you need more than 1 Switch
- *      to control the sensor.
- * delay: If set to less than 1 there will be no delay when all Switches are
- *      turned to off. Specify a number in seconds and the sensor will wait
- *      that long after all switches have been turned off to become
- *      "Un-occupied". If any trigger Switch is turned on the counter will clear
- *      and startUnoccupiedDelay over once all Switches are off again.
- *
- *
- * What can I do with this plugin?
- * @todo: Addd use case and instructions here.
- */
 class MagicOccupancy {
   constructor(log, config) {
     this.log = log;
@@ -102,7 +78,12 @@ class MagicOccupancy {
     this.triggerSwitchesCount = Math.max(0, config.triggerSwitchesCount || 1);
     this.statefulStayOnSwitchesCount = Math.max(0, config.statefulSwitchesCount || 1);
     this.triggerStayOnSwitchesCount = Math.max(0, config.triggerSwitchesCount || 1);
-    this.delay = Math.min(3600, Math.max(0, parseInt(config.delay, 10) || 0));
+    this.stayOccupiedDelay = Math.min(3600, Math.max(0, parseInt(config.stayOccupiedDelay || 0, 10) || 0));
+    this.maxOccupationTimeout = Math.max(0, parseInt(config.maxOccupationTimeout || 0, 10) || 0)
+    this.ignoreStatefulIfTurnedOnByTrigger = (config.ignoreStatefulIfTurnedOnByTrigger == true);
+    this.wasTurnedOnByTriggerSwitch = false;
+
+    this._max_occupation_timer = null;
 
     this._timer = null;
     this._timer_started = null;
@@ -118,13 +99,13 @@ class MagicOccupancy {
     this.occupancyService.addCharacteristic(Characteristic.TimeoutDelay);
     this.occupancyService.setCharacteristic(
       Characteristic.TimeoutDelay,
-      this.delay
+      this.stayOccupiedDelay
     );
     this.occupancyService
       .getCharacteristic(Characteristic.TimeoutDelay)
       .on("change", (event) => {
-        this.log("Setting delay to:", event.newValue);
-        this.delay = event.newValue;
+        this.log("Setting stay occupied delay to:", event.newValue);
+        this.stayOccupiedDelay = event.newValue;
       });
 
     this.occupancyService.addCharacteristic(Characteristic.TimeRemaining);
@@ -195,13 +176,13 @@ class MagicOccupancy {
   startUnoccupiedDelay() {
     this.stop();
     this._timer_started = new Date().getTime();
-    this.log("Timer startUnoccupiedDelayed:", this.delay);
-    if (this.delay) {
+    this.log("Timer startUnoccupiedDelayed:", this.stayOccupiedDelay);
+    if (this.stayOccupiedDelay > 0) {
       this._timer = setTimeout(
         this.setOccupancyNotDetected.bind(this),
-        this.delay * 1000
+        round(this.stayOccupiedDelay * 1000)
       );
-      this._timer_delay = this.delay;
+      this._timer_delay = this.stayOccupiedDelay;
       this._interval = setInterval(() => {
         var elapsed = (new Date().getTime() - this._timer_started) / 1000,
           newValue = Math.round(this._timer_delay - elapsed);
@@ -225,7 +206,7 @@ class MagicOccupancy {
    */
   stop() {
     if (this._timer) {
-      this.log("Timer stopped");
+      this.log("Delay timer stopped");
       clearTimeout(this._timer);
       clearInterval(this._interval);
       this._timer = null;
@@ -242,23 +223,55 @@ class MagicOccupancy {
       Characteristic.OccupancyDetected,
       Characteristic.OccupancyDetected.OCCUPANCY_DETECTED
     );
-    if (this.delay) {
+    if (this.stayOccupiedDelay) {
       this.occupancyService.setCharacteristic(
         Characteristic.TimeRemaining,
-        this.delay
+        this.stayOccupiedDelay
+      );
+    }
+
+    if(this.maxOccupationTimeout > 0 && this._max_occupation_timer == null) {
+      this._max_occupation_timer = setTimeout(
+        this.setOccupancyNotDetected.bind(this),
+        round(this.maxOccupationTimeout * 1000)
       );
     }
   }
 
   setOccupancyNotDetected() {
     this._last_occupied_state = false;
+    this.wasTurnedOnByTriggerSwitch = false;
     this.stop();
     this.occupancyService.setCharacteristic(
       Characteristic.OccupancyDetected,
       Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED
     );
-    if (this.delay) {
+    if (this.stayOccupiedDelay) {
       this.occupancyService.setCharacteristic(Characteristic.TimeRemaining, 0);
+    }
+
+    if(this.maxOccupationTimeout > 0 && this._max_occupation_timer == null) {
+      this._max_occupation_timer = setTimeout(
+        this.setOccupancyNotDetected.bind(this),
+        round(this.maxOccupationTimeout * 1000)
+      );
+    }
+
+    //Clear max timeout
+    if (this._max_occupation_timer != null) {
+      this.log("Max occupation timer stopped");
+      clearTimeout(this._max_occupation_timer);
+      this._max_occupation_timer = null;
+    }
+
+    //Turn all switches off
+    for (let i = 0; i < this.switchServices.length; i += 1) {
+      this.switchServices[i]
+          .setCharacteristic(Characteristic.On, false);
+    }
+    for (let i = 0; i < this.stayOnServices.length; i += 1) {
+      this.stayOnServices[i]
+          .setCharacteristic(Characteristic.On, false);
     }
   }
 
@@ -402,6 +415,12 @@ class OccupancyTriggerSwitch {
 
   _setOn(on, callback) {
 
+    //If we're being turned on by a non-stateful switch, we need to know that - this means we should disable stateful switches
+    if(on && this.occupancySensor._last_occupied_state === false) {
+      //Non-stateful switches
+      this.occupancySensor.wasTurnedOnByTriggerSwitch = !this.stateful;
+    }
+
     this.log("Setting switch to " + on);
 
     if (on && !this.reverse && !this.stateful) {
@@ -433,6 +452,14 @@ class OccupancyTriggerSwitch {
     setTimeout(function() {
       this.occupancySensor.checkOccupancy();
     }.bind(this), 100);
+
+    // IF OCCUPANCY WAS TRIGGERED BY MOTION, STATEFUL SWITCHES ARE DISABLED AND TREATED STATELESS
+    if(this.stateful && this.occupancySensor.wasTurnedOnByTriggerSwitch && this.occupancySensor.ignoreStatefulIfTurnedOnByTrigger && on) {
+      this.log("Treating stateful action as trigger due to wasTurnedOnByTriggerSwitch and ignoreStatefulIfTurnedOnByTrigger");
+      setTimeout(function() {
+        this._service.setCharacteristic(Characteristic.On, false);
+      }.bind(this), 1000);
+    }
 
 
     callback();
