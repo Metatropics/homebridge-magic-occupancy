@@ -382,17 +382,12 @@ class MagicOccupancy {
    * @returns {*[]}
    */
   getServices() {
-    var informationService = new Service.AccessoryInformation()
-      .setCharacteristic(Characteristic.Manufacturer, "https://github.com/Jason-Morcos/homebridge-magic-occupancy")
-      .setCharacteristic(Characteristic.Model, "2")
-      .setCharacteristic(Characteristic.SerialNumber, "JmoMagicOccupancySwitch");
-
     var services = [this.occupancyService, this.informationService];
     if(this.masterShutoffService != null) {
       services.push(this.masterShutoffService);
     }
 
-    return services + [...this.switchServices, ...this.stayOnServices];
+    return services.concat([...this.switchServices, ...this.stayOnServices]);
   }
 }
 
