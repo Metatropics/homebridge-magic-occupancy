@@ -49,6 +49,13 @@
                 "description": "Whether or not stateful switches should be treated like trigger switches if occupation was turned on by a trigger switch.",
                 "title": "Ignore Stateful if Turned On By Trigger",
                 "type": "boolean"
+            },
+            "createMasterShutoff": {
+                "required": true,
+                "default": true,
+                "description": "Whether or not to create a master shutoff switch. Master shutoff toggled off kills occupancy immediately",
+                "title": "Create Master Shutoff",
+                "type": "boolean"
             }
         },
         "type": "object"

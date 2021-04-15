@@ -95,6 +95,11 @@ class MagicOccupancy {
     this.switchServices = [];
     this.stayOnServices = [];
     this.occupancyService = new Service.OccupancySensor(this.name);
+    this.informationService = new Service.AccessoryInformation()
+      .setCharacteristic(Characteristic.Manufacturer, "https://github.com/Jason-Morcos/homebridge-magic-occupancy")
+      .setCharacteristic(Characteristic.Model, "2")
+      .setCharacteristic(Characteristic.SerialNumber, "JmoMagicOccupancySwitch");
+    this.masterShutoffService = null;
 
     this.occupancyService.addCharacteristic(Characteristic.TimeoutDelay);
     this.occupancyService.setCharacteristic(
@@ -167,6 +172,11 @@ class MagicOccupancy {
           time: 1000,
           resettable: false,
       }))._service);
+    }
+
+    //Create master shutoff
+    if(config.createMasterShutoff == true) {
+      this.masterShutoffService = (new MasterShutoffSwitch(this))._service;
     }
   }
 
@@ -377,7 +387,12 @@ class MagicOccupancy {
       .setCharacteristic(Characteristic.Model, "2")
       .setCharacteristic(Characteristic.SerialNumber, "JmoMagicOccupancySwitch");
 
-    return [this.occupancyService, informationService, ...this.switchServices, ...this.stayOnServices];
+    var services = [this.occupancyService, this.informationService];
+    if(this.masterShutoffService != null) {
+      services.push(this.masterShutoffService);
+    }
+
+    return services + [...this.switchServices, ...this.stayOnServices];
   }
 }
 
@@ -460,6 +475,43 @@ class OccupancyTriggerSwitch {
         this._service.setCharacteristic(Characteristic.On, false);
       }.bind(this), 1000);
     }
+
+
+    callback();
+  }
+}
+
+
+class MasterShutoffSwitch {
+  constructor(occupancySensor) {
+    this.log = occupancySensor.log;
+    this.occupancySensor = occupancySensor;
+    this.name = occupancySensor.name + " Master Shutoff";
+
+    this.cacheDirectory = occupancySensor.cacheDirectory;
+    this.storage = occupancySensor.storage;
+
+    this._service.setCharacteristic(Characteristic.On, true);
+    this._service.getCharacteristic(Characteristic.On)
+      .on('set', this._setOn.bind(this));
+
+  }
+
+  _setOn(on, callback) {
+
+    this.log("Setting master shutoff switch to " + on);
+
+    if(!on) {
+      setTimeout(function() {
+        this.occupancySensor.setOccupancyNotDetected();
+      }.bind(this), 0);
+
+      setTimeout(function() {
+        this._service.setCharacteristic(Characteristic.On, true);
+      }.bind(this), 1000);
+    }
+
+
 
 
     callback();
