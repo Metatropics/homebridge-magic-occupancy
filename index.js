@@ -162,7 +162,7 @@ class MagicOccupancy {
           name: "Main Trigger " + i.toString(),
           stateful: false,
           reverse: false,
-          time: 5000,
+          time: 1000,
           resettable: false,
       }))._service);
     }
@@ -183,7 +183,7 @@ class MagicOccupancy {
           name: "StayOn Trigger " + i.toString(),
           stateful: false,
           reverse: false,
-          time: 5000,
+          time: 1000,
           resettable: false,
       }))._service);
     }
@@ -306,6 +306,7 @@ class MagicOccupancy {
       if (remainingPrimary <= 0) {
         if(occupied === true || this._last_occupied_state === false || this.stayOnServices.length <= 0) {
           return_occupancy(occupied);
+          return;
         }
 
         this.log(`Need to review stay-on switches too`);
@@ -318,6 +319,7 @@ class MagicOccupancy {
 
           if (remainingStayOn <= 0) {
             return_occupancy(occupied);
+            return;
           }
         };
 
@@ -408,9 +410,9 @@ class OccupancyTriggerSwitch {
       }
       this.timer = setTimeout(function() {
         this._service.setCharacteristic(Characteristic.On, false);
-        setTimeout(function() {
-          this.occupancySensor.checkOccupancy();
-        }.bind(this), 100);
+        // setTimeout(function() {
+        //   this.occupancySensor.checkOccupancy();
+        // }.bind(this), 100);
       }.bind(this), this.time);
     } else if (!on && this.reverse && !this.stateful) {
       if (this.resettable) {
@@ -418,9 +420,9 @@ class OccupancyTriggerSwitch {
       }
       this.timer = setTimeout(function() {
         this._service.setCharacteristic(Characteristic.On, true);
-        setTimeout(function() {
-          this.occupancySensor.checkOccupancy();
-        }.bind(this), 100);
+        // setTimeout(function() {
+        //   this.occupancySensor.checkOccupancy();
+        // }.bind(this), 100);
       }.bind(this), this.time);
     }
 
