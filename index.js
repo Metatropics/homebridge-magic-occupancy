@@ -180,7 +180,7 @@ class MagicOccupancy {
     if (this.stayOccupiedDelay > 0) {
       this._timer = setTimeout(
         this.setOccupancyNotDetected.bind(this),
-        round(this.stayOccupiedDelay * 1000)
+        Math.round(this.stayOccupiedDelay * 1000)
       );
       this._timer_delay = this.stayOccupiedDelay;
       this._interval = setInterval(() => {
@@ -233,7 +233,7 @@ class MagicOccupancy {
     if(this.maxOccupationTimeout > 0 && this._max_occupation_timer == null) {
       this._max_occupation_timer = setTimeout(
         this.setOccupancyNotDetected.bind(this),
-        round(this.maxOccupationTimeout * 1000)
+        Math.round(this.maxOccupationTimeout * 1000)
       );
     }
   }
@@ -253,7 +253,7 @@ class MagicOccupancy {
     if(this.maxOccupationTimeout > 0 && this._max_occupation_timer == null) {
       this._max_occupation_timer = setTimeout(
         this.setOccupancyNotDetected.bind(this),
-        round(this.maxOccupationTimeout * 1000)
+        Math.round(this.maxOccupationTimeout * 1000)
       );
     }
 
