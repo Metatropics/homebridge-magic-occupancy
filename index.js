@@ -278,11 +278,21 @@ class MagicOccupancy {
     //Turn all switches off
     for (let i = 0; i < this.switchServices.length; i += 1) {
       this.switchServices[i]
-          .setCharacteristic(Characteristic.On, false);
+        .getCharacteristic(Characteristic.On)
+        .getValue(function(err, value) {
+          if (!err && value) {
+            this.switchServices[i].setCharacteristic(Characteristic.On, false);
+          }
+        });
     }
     for (let i = 0; i < this.stayOnServices.length; i += 1) {
       this.stayOnServices[i]
-          .setCharacteristic(Characteristic.On, false);
+        .getCharacteristic(Characteristic.On)
+        .getValue(function(err, value) {
+          if (!err && value) {
+            this.stayOnServices[i].setCharacteristic(Characteristic.On, false);
+          }
+        });
     }
   }
 
@@ -422,12 +432,12 @@ class OccupancyTriggerSwitch {
       }.bind(this), this.time);
     }
 
+    callback();
+
     //Only dispatch appropriate events - all events from non stay-on and only from stay ons when on
     if(!this.stayOnOnly || this.occupancySensor._last_occupied_state === true) {
       this.occupancySensor.checkOccupancy();
     }
-
-    callback();
   }
 }
 
