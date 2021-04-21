@@ -276,23 +276,20 @@ class MagicOccupancy {
     }
 
     //Turn all switches off
-    for (let i = 0; i < this.switchServices.length; i += 1) {
-      this.switchServices[i]
+    var shutoff_switch = (aSwitch) => {
+      aSwitch
         .getCharacteristic(Characteristic.On)
         .getValue(function(err, value) {
           if (!err && value) {
-            this.switchServices[i].setCharacteristic(Characteristic.On, false);
+            aSwitch.setCharacteristic(Characteristic.On, false);
           }
         });
     }
+    for (let i = 0; i < this.switchServices.length; i += 1) {
+      shutoff_switch(this.switchServices[i]);
+    }
     for (let i = 0; i < this.stayOnServices.length; i += 1) {
-      this.stayOnServices[i]
-        .getCharacteristic(Characteristic.On)
-        .getValue(function(err, value) {
-          if (!err && value) {
-            this.stayOnServices[i].setCharacteristic(Characteristic.On, false);
-          }
-        });
+      shutoff_switch(this.stayOnServices[i]);
     }
   }
 
