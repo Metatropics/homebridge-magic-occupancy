@@ -138,6 +138,7 @@ class MagicOccupancy {
       this.switchServices.push((new OccupancyTriggerSwitch(this, {
           name: "Main Stateful " + i.toString(),
           stateful: true,
+          stayOnOnly: false,
       }))._service);
     }
     /* Make the triggerSwitches */
@@ -146,6 +147,7 @@ class MagicOccupancy {
       this.switchServices.push((new OccupancyTriggerSwitch(this, {
           name: "Main Trigger " + i.toString(),
           stateful: false,
+          stayOnOnly: false,
       }))._service);
     }
 
@@ -155,6 +157,7 @@ class MagicOccupancy {
       this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
           name: "StayOn Stateful " + i.toString(),
           stateful: true,
+          stayOnOnly: true,
       }))._service);
     }
     /* Make the triggerStayOnSwitches */
@@ -163,6 +166,7 @@ class MagicOccupancy {
       this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
           name: "StayOn Trigger " + i.toString(),
           stateful: false,
+          stayOnOnly: true,
       }))._service);
     }
 
@@ -176,6 +180,11 @@ class MagicOccupancy {
    * startUnoccupiedDelays the countdown timer.
    */
   startUnoccupiedDelay() {
+    if(this._last_occupied_state === false) {
+      this.setOccupancyNotDetected();
+      return;
+    }
+
     this.stop();
     this._timer_started = new Date().getTime();
     this.log("Timer startUnoccupiedDelayed:", this.stayOccupiedDelay);
@@ -285,81 +294,65 @@ class MagicOccupancy {
   checkOccupancy() {
     this.log.debug(`checking occupancy. Total: ${this.switchServices.length}`);
 
-    var occupied = 0;
-    var remainingPrimary = this.switchServices.length;
-    var remainingStayOn = this.stayOnServices.length;
+    var switchesToCheck = [];
+    switchesToCheck.push(...this.switchServices);
+    //Stay-on switches only honored if we're already on
+    if(this._last_occupied_state === true) {
+      switchesToCheck.push(...this.stayOnServices);
+    }
 
     /* callback for when all the switchServices values have been returned */
-    var return_occupancy = (occupied) => {
-      if (occupied > 0) {
+    var return_occupancy = (occupiedSwitchCount) => {
+      const previousOccupiedState = this._last_occupied_state;
+
+      if (occupiedSwitchCount > 0) {
         this.setOccupancyDetected();
       } else if (this._timer === null) {
         this.startUnoccupiedDelay();
       }
 
-      // @todo: Set a custom property for how many switchServices we're waiting for
       this.log(
-        `checkOccupancy result: ${occupied}. Last occupied state: ${this._last_occupied_state}`
+        `checkOccupancy result: ${occupiedSwitchCount}. Previous occupied state: ${previousOccupiedState}, current: ${this._last_occupied_state}`
       );
+
     };
 
     /*
         callback when we check a switchServices value. keeps track of the switchServices
         returned value and decides when to finish the function
       */
-    var set_value = (value) => {
-      this.log.debug(`Remaining Main Switches: ${remainingPrimary}, value: ${value}`);
-      remainingPrimary -= 1;
+    var remainingCount = switchesToCheck.length;
+    var occupiedSwitchCount = 0;
+    var set_occupancy_switch_value_result = (value) => {
+      this.log.debug(`Remaining Switches: ${remainingCount}, value: ${value}`);
+      remainingCount -= 1;
       if (value) {
-        occupied += 1;
+        occupiedSwitchCount += 1;
       }
 
-      if (remainingPrimary <= 0) {
-        if(occupied === true || this._last_occupied_state === false || this.stayOnServices.length <= 0) {
-          return_occupancy(occupied);
-          return;
-        }
-
-        this.log.debug(`Need to review stay-on switches too`);
-        var set_stayOn_value = (value) => {
-          this.log.debug(`Remaining Stay-on Switches: ${remainingStayOn}, value: ${value}`);
-          remainingStayOn -= 1;
-          if (value) {
-            occupied += 1;
-          }
-
-          if (remainingStayOn <= 0) {
-            return_occupancy(occupied);
-            return;
-          }
-        };
-
-        /* look at all the trigger switchServices "on" characteristic and return to callback */
-        for (let i = 0; i < this.stayOnServices.length; i += 1) {
-          this.stayOnServices[i]
-              .getCharacteristic(Characteristic.On)
-              .getValue(function(err, value) {
-                if (!err) {
-                  set_stayOn_value(value);
-                }
-              });
-        }
+      if (remainingCount == 0) {
+        return_occupancy(occupiedSwitchCount);
       }
     };
 
     /* look at all the trigger switchServices "on" characteristic and return to callback */
-    for (let i = 0; i < this.switchServices.length; i += 1) {
-      this.switchServices[i]
-          .getCharacteristic(Characteristic.On)
-          .getValue(function(err, value) {
-            if (!err) {
-              set_value(value);
-            }
-          });
+    for (var aSwitch in switchesToCheck) {
+      aSwitch
+        .getCharacteristic(Characteristic.On)
+        .getValue(function(err, value) {
+          if (!err) {
+            set_occupancy_switch_value_result(value);
+          } else {
+            this.log(
+              `ERROR GETTING VALUE ${err}`
+            );
+            set_occupancy_switch_value_result(false);
+          }
+        });
     }
 
-    if(this.switchServices.length == 0) {
-      set_value(false);
+    if(switchesToCheck.length == 0) {
+      return_occupancy(0);
     }
   }
 
@@ -385,6 +378,7 @@ class OccupancyTriggerSwitch {
     this.occupancySensor = occupancySensor;
     this.name = occupancySensor.name + " " + config.name;
     this.stateful = config.stateful;
+    this.stayOnOnly = config.stayOnOnly;
     this.time = 1000;
     this.timer = null;
     this._service = new Service.Switch(this.name, this.name);
@@ -428,7 +422,10 @@ class OccupancyTriggerSwitch {
       }.bind(this), this.time);
     }
 
-    this.occupancySensor.checkOccupancy();
+    //Only dispatch appropriate events - all events from non stay-on and only from stay ons when on
+    if(!this.stayOnOnly || this.occupancySensor._last_occupied_state === true) {
+      this.occupancySensor.checkOccupancy();
+    }
 
     callback();
   }
