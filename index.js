@@ -336,19 +336,19 @@ class MagicOccupancy {
     };
 
     /* look at all the trigger switchServices "on" characteristic and return to callback */
-    for (var aSwitch in switchesToCheck) {
-      aSwitch
-        .getCharacteristic(Characteristic.On)
-        .getValue(function(err, value) {
-          if (!err) {
-            set_occupancy_switch_value_result(value);
-          } else {
-            this.log(
-              `ERROR GETTING VALUE ${err}`
-            );
-            set_occupancy_switch_value_result(false);
-          }
-        });
+    for (let i = 0; i < switchesToCheck.length; i += 1) {
+      switchesToCheck[i]
+          .getCharacteristic(Characteristic.On)
+          .getValue(function(err, value) {
+            if (!err) {
+              set_occupancy_switch_value_result(value);
+            } else {
+              this.log(
+                `ERROR GETTING VALUE ${err}`
+              );
+              set_occupancy_switch_value_result(false);
+            }
+          });
     }
 
     if(switchesToCheck.length == 0) {
