@@ -74,10 +74,10 @@ class MagicOccupancy {
   constructor(log, config) {
     this.log = log;
     this.name = config.name || "MagicOccupancy";
-    this.statefulSwitchesCount = Math.max(0, config.statefulSwitchesCount || 1);
-    this.triggerSwitchesCount = Math.max(0, config.triggerSwitchesCount || 1);
-    this.statefulStayOnSwitchesCount = Math.max(0, config.statefulSwitchesCount || 1);
-    this.triggerStayOnSwitchesCount = Math.max(0, config.triggerSwitchesCount || 1);
+    this.statefulSwitchesCount = Math.max(0, config.statefulSwitchesCount || 0);
+    this.triggerSwitchesCount = Math.max(0, config.triggerSwitchesCount || 0);
+    this.statefulStayOnSwitchesCount = Math.max(0, config.statefulSwitchesCount || 0);
+    this.triggerStayOnSwitchesCount = Math.max(0, config.triggerSwitchesCount || 0);
     this.stayOccupiedDelay = Math.min(3600, Math.max(0, parseInt(config.stayOccupiedDelay || 0, 10) || 0));
     this.maxOccupationTimeout = Math.max(0, parseInt(config.maxOccupationTimeout || 0, 10) || 0)
     this.ignoreStatefulIfTurnedOnByTrigger = (config.ignoreStatefulIfTurnedOnByTrigger == true);
