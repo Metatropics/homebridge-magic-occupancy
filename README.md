@@ -1,4 +1,5 @@
-# "Magic Occupancy Switch" Plugin
+# Homebridge "Magic Occupancy Switch" Plugin
+[![npm version](https://badge.fury.io/js/homebridge-magic-occupancy.svg)](https://badge.fury.io/js/homebridge-magic-occupancy)
 
 
 ## How to install
