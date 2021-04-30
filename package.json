@@ -24,7 +24,7 @@
     "node-persist": "^2.1.0"
   },
   "funding": {
-    "type" : "github",
-    "url" : "https://github.com/sponsors/Jason-Morcos"
+    "type": "github",
+    "url": "https://github.com/sponsors/Jason-Morcos"
   }
 }
