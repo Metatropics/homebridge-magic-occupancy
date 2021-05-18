@@ -18,8 +18,10 @@
           "maxOccupationSeconds": 86400,
           "statefulSwitchesCount": 1,
           "triggerSwitchesCount": 1,
+          "motionSwitchesCount": 1,
           "statefulStayOnSwitchesCount": 1,
           "triggerStayOnSwitchesCount": 1,
+          "motionStayOnSwitchesCount": 1,
           "ignoreStatefulIfTurnedOnByTrigger": true,
           "createMasterShutoff": true
         }
@@ -71,8 +73,10 @@ Here is an example use case for how you can make this switch incredible powerful
           "maxOccupationSeconds": 86400,
           "statefulSwitchesCount": 1,
           "triggerSwitchesCount": 1,
+          "motionSwitchesCount": 1,
           "statefulStayOnSwitchesCount": 1,
           "triggerStayOnSwitchesCount": 1,
+          "motionStayOnSwitchesCount": 1,
           "ignoreStatefulIfTurnedOnByTrigger": true,
           "createMasterShutoff": true
         }
@@ -84,15 +88,17 @@ Here is an example use case for how you can make this switch incredible powerful
 - When Hallway Lights turn off -> Turn off Hallway Occupancy Master Switch
 - When Hallway Occupancy Sensor Detects Occupancy -> Turn on Hallway Light
 - When Hallway Occupancy Sensor Stops Detecting Occupancy -> Turn off Hallway Light
-- When Hallway Motion Sensor Detects Motion -> Turn on Hallway Occupancy Trigger Switch
+- When Hallway Motion Sensor Detects Motion -> Turn on Hallway Occupancy Motion Switch
+- When Hallway Motion Sensor Stops Detecting Motion -> Turn off Hallway Occupancy Motion Switch
 
 Now, when the Hallway Lights are manually turned on or off, they stay on until the switch is manually turned back off or the maxOccupationSeconds time (86400 seconds=1 day) elapses.
 When the Hallway Lights are turned on by the motion sensor, they automatically turn off stayOccupiedDelay (60 seconds=1 minute) after motion stops (ignoreStatefulIfTurnedOnByTrigger crucially prevents the first automation from keeping the lights on forever).
 
 ### Additional Advanced HomeKit Automations
+- When Garage Door Is Opened -> Turn on Hallway Trigger Switch
 - When Kitchen Motion Sensor Detects Motion -> Turn on Hallway Occupancy Stay-on Trigger Switch
 - When Dining Room Lights Turn on -> Turn on Hallway Occupancy Stay-on Stateful Switch
 - When Dining Room Lights Turn off -> Turn off Hallway Occupancy Stay-on Stateful Switch
 
-These automations add the fancy elements of keeping the hallway lights on for longer if they're already on and the kitchen lights turn on, and keeping the hallway lights on as long as the dining room lights are on (if the hallway lights are already on).
+These automations add the fancy elements of turning on the hallway lights when the garage opens, keeping the hallway lights on for longer if they're already on and the kitchen lights turn on, and keeping the hallway lights on as long as the dining room lights are on (if the hallway lights are already on).
 Fancy!
