@@ -386,7 +386,7 @@ class OccupancyTriggerSwitch {
     this.name = occupancySensor.name + " " + config.name;
     this.stateful = config.stateful;
     this.stayOnOnly = config.stayOnOnly;
-    this.time = 1000;
+    this.time = 2000;
     this.timer = null;
     this._service = new Service.Switch(this.name, this.name);
 
@@ -409,31 +409,34 @@ class OccupancyTriggerSwitch {
   _setOn(on, callback) {
 
     //If we're being turned on by a non-stateful switch, we need to know that - this means we should disable stateful switches
-    if(on && this.occupancySensor._last_occupied_state === false) {
+    if(on && this.occupancySensor._last_occupied_state === false && !this.stateful) {
       //Non-stateful switches
-      this.occupancySensor.wasTurnedOnByTriggerSwitch = !this.stateful;
+      this.occupancySensor.wasTurnedOnByTriggerSwitch = true;
     }
 
     this.log.debug("Setting switch " + this.name + " to " + on);
 
-    var treatStateful = this.stateful;
-    if(this.stateful && this.occupancySensor.wasTurnedOnByTriggerSwitch && this.occupancySensor.ignoreStatefulIfTurnedOnByTrigger) {
-      this.log("Treating stateful action to " + this.name + " as trigger due to wasTurnedOnByTriggerSwitch and ignoreStatefulIfTurnedOnByTrigger");
-      treatStateful = false;
-    }
+    //After a delay, if we were turned on by a trigger switch flip me back off
+    clearTimeout(this.timer)
+    this.timer = setTimeout(function() {
+      var treatStateful = this.stateful;
+      if(this.stateful && this.occupancySensor.wasTurnedOnByTriggerSwitch && this.occupancySensor.ignoreStatefulIfTurnedOnByTrigger) {
+        this.log("Treating stateful action to " + this.name + " as trigger due to wasTurnedOnByTriggerSwitch and ignoreStatefulIfTurnedOnByTrigger");
+        treatStateful = false;
+      }
 
-    if (!treatStateful && on) {
-      clearTimeout(this.timer)
-      this.timer = setTimeout(function() {
+      if (!treatStateful && on) {
         this._service.setCharacteristic(Characteristic.On, false);
-      }.bind(this), this.time);
-    }
+      }
+    }.bind(this), this.time);
 
     callback();
 
     //Only dispatch appropriate events - all events from non stay-on and only from stay ons when on
     if(!this.stayOnOnly || this.occupancySensor._last_occupied_state === true) {
-      this.occupancySensor.checkOccupancy();
+      setTimeout(function() {
+        this.occupancySensor.checkOccupancy();
+      }.bind(this), 10);
     }
   }
 }
@@ -462,11 +465,11 @@ class MasterShutoffSwitch {
     if(on) {
       setTimeout(function() {
         this.occupancySensor.setOccupancyNotDetected();
-      }.bind(this), 0);
+        setTimeout(function() {
+          this._service.setCharacteristic(Characteristic.On, false);
+        }.bind(this), 2000);
+      }.bind(this), 1);
 
-      setTimeout(function() {
-        this._service.setCharacteristic(Characteristic.On, false);
-      }.bind(this), 1000);
     }
 
 
