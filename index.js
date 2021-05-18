@@ -138,7 +138,7 @@ class MagicOccupancy {
     this.log.debug("Making " + this.statefulSwitchesCount + " Stateful trigger switchServices");
     for (let i = 0, c = this.statefulSwitchesCount; i < c; i += 1) {
       this.switchServices.push((new OccupancyTriggerSwitch(this, {
-          name: "Main Stateful " + i.toStri
+          name: "Main Stateful " + i.toString(),
           stayOnOnly: false,
           isTrigger: false,
           isMotion: false,
@@ -160,7 +160,7 @@ class MagicOccupancy {
       this.switchServices.push((new OccupancyTriggerSwitch(this, {
           name: "Main Motion " + i.toString(),
           stayOnOnly: false,
-          isTrigger: false,
+          isTrigger: true,
           isMotion: true,
       }))._service);
     }
@@ -191,7 +191,7 @@ class MagicOccupancy {
       this.switchServices.push((new OccupancyTriggerSwitch(this, {
           name: "StayOn Motion " + i.toString(),
           stayOnOnly: true,
-          isTrigger: false,
+          isTrigger: true,
           isMotion: true,
       }))._service);
     }
@@ -414,7 +414,7 @@ class OccupancyTriggerSwitch {
     this.isMotion = config.isMotion;
     this.isTrigger = config.isTrigger || config.isMotion;
     this.stateful = !config.isTrigger;
-    this.time = this.isMotion ? null : 2000;
+    this.time = 2000;
     this.timer = null;
     this._service = new Service.Switch(this.name, this.name);
 
@@ -445,7 +445,7 @@ class OccupancyTriggerSwitch {
     this.log.debug("Setting switch " + this.name + " to " + on);
 
     //After a delay, if we were turned on by a trigger switch flip me back off
-    if(this.time !== null) {
+    if(!this.isMotion) {
       clearTimeout(this.timer)
       this.timer = setTimeout(function() {
         var treatStateful = this.stateful;
