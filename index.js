@@ -188,7 +188,7 @@ class MagicOccupancy {
     /* Make the motionStayOnSwitches */
     this.log.debug("Making " + this.motionStayOnSwitchesCount + " StayOn Motion trigger switchServices");
     for (let i = 0, c = this.motionStayOnSwitchesCount; i < c; i += 1) {
-      this.switchServices.push((new OccupancyTriggerSwitch(this, {
+      this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
           name: "StayOn Motion " + i.toString(),
           stayOnOnly: true,
           isTrigger: true,
@@ -435,11 +435,18 @@ class OccupancyTriggerSwitch {
   }
 
   _setOn(on, callback) {
+    //Early return to break out on shutoff events when all switches are shutoff (like if master shutoff is triggered)
+    if(!on && this.occupancySensor._last_occupied_state === false) {
+      this.log("Setting " + this.name + " to off and bypassing all events");
+      callback();
+      return;
+    }
 
     //If we're being turned on by a non-stateful switch, we need to know that - this means we should disable stateful switches
     if(on && this.occupancySensor._last_occupied_state === false && this.isTrigger) {
       //Non-stateful switches
       this.occupancySensor.wasTurnedOnByTriggerSwitch = true;
+      this.log("Setting wasTurnedOnByTriggerSwitch to true due to " + this.name);
     }
 
     this.log.debug("Setting switch " + this.name + " to " + on);
@@ -490,14 +497,13 @@ class MasterShutoffSwitch {
 
   _setOn(on, callback) {
 
-    this.log("Setting master shutoff switch to " + on);
 
     if(on) {
+      this.log("Setting master shutoff switch to on, killing everything");
+
       setTimeout(function() {
         this.occupancySensor.setOccupancyNotDetected();
-        setTimeout(function() {
-          this._service.setCharacteristic(Characteristic.On, false);
-        }.bind(this), 2000);
+        this._service.setCharacteristic(Characteristic.On, false);
       }.bind(this), 1);
 
     }
