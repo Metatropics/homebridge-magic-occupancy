@@ -443,7 +443,7 @@ class OccupancyTriggerSwitch {
     }
 
     //If we're being turned on by a non-stateful switch, we need to know that - this means we should disable stateful switches
-    if(on && this.occupancySensor._last_occupied_state === false && this.isTrigger) {
+    if(on && this.occupancySensor._last_occupied_state === false && this.isTrigger && !this.stayOnOnly) {
       //Non-stateful switches
       this.occupancySensor.wasTurnedOnByTriggerSwitch = true;
       this.log("Setting wasTurnedOnByTriggerSwitch to true due to " + this.name);
