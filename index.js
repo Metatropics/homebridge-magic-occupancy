@@ -222,7 +222,7 @@ class MagicOccupancy {
       this.log(
         `startOnReboot==true - setting to active`
       );
-      setOccupancyDetected();
+      this.setOccupancyDetected();
     }
 
     //We're up!
