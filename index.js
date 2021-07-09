@@ -241,6 +241,7 @@ class MagicOccupancy {
     this.locksCounter += 1;
     if(this._last_occupied_state === false) {
       this.setOccupancyNotDetected();
+      this.locksCounter -= 1;
       return;
     }
 
@@ -364,7 +365,7 @@ class MagicOccupancy {
    */
   checkOccupancy(timeoutUntilCheck = 0) {
     if(this.locksCounter > 0) {
-      this.log.debug(`checking occupancy waiting - in lockout state for at least 300ms`);
+      this.log.debug(`checking occupancy waiting for ${this.locksCounter} to clear; waiting for at least 300ms`);
       timeoutUntilCheck = Math.max(300, timeoutUntilCheck);
     }
 
@@ -402,7 +403,6 @@ class MagicOccupancy {
       this.log(
         `checkOccupancy result: ${occupiedSwitchCount}. Previous occupied state: ${previousOccupiedState}, current: ${this._last_occupied_state}`
       );
-      this.locksCounter -= 1;
 
     };
 
@@ -443,6 +443,8 @@ class MagicOccupancy {
     if(switchesToCheck.length == 0) {
       return_occupancy(0);
     }
+
+    this.locksCounter -= 1;
   }
 
   /**
@@ -493,13 +495,14 @@ class OccupancyTriggerSwitch {
   _setOn(on, callback) {
     //Make sure we're actually full initialized
     if(!this.occupancySensor.initializationCompleted) {
+      this.log.debug("Setting " + this.name + " initial state and bypassing all events");
       callback();
       return;
     }
 
     //Early return to break out on shutoff events when all switches are shutoff (like if master shutoff is triggered)
     if(!on && this.occupancySensor._last_occupied_state === false) {
-      this.log("Setting " + this.name + " to off and bypassing all events");
+      this.log.debug("Setting " + this.name + " to off and bypassing all events");
       callback();
       return;
     }
@@ -570,13 +573,10 @@ class MasterShutoffSwitch {
       setTimeout(function() {
         this.occupancySensor.setOccupancyNotDetected();
         this._service.setCharacteristic(Characteristic.On, false);
+        this.occupancySensor.locksCounter -= 1;
       }.bind(this), 1);
-      this.occupancySensor.locksCounter -= 1;
 
     }
-
-
-
 
     callback();
   }
