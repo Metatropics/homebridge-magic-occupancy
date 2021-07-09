@@ -83,7 +83,11 @@ class MagicOccupancy {
     this.stayOccupiedDelay = Math.min(3600, Math.max(0, parseInt(config.stayOccupiedDelay || 0, 10) || 0));
     this.maxOccupationTimeout = Math.max(0, parseInt(config.maxOccupationTimeout || 0, 10) || 0)
     this.ignoreStatefulIfTurnedOnByTrigger = (config.ignoreStatefulIfTurnedOnByTrigger == true);
+    this.startOnReboot = config.startOnReboot || false;
     this.wasTurnedOnByTriggerSwitch = false;
+    this.initializationCompleted = false;
+    this.locksCounter = 0;
+    this.isPendingCheckOccupancy = false;
 
     this._max_occupation_timer = null;
 
@@ -135,77 +139,102 @@ class MagicOccupancy {
     });
 
     /* Make the statefulSwitches */
-    this.log.debug("Making " + this.statefulSwitchesCount + " Stateful trigger switchServices");
-    for (let i = 0, c = this.statefulSwitchesCount; i < c; i += 1) {
-      this.switchServices.push((new OccupancyTriggerSwitch(this, {
-          name: "Main Stateful " + i.toString(),
-          stayOnOnly: false,
-          isTrigger: false,
-          isMotion: false,
-      }))._service);
+    if(this.statefulSwitchesCount > 0) {
+      this.log.debug("Making " + this.statefulSwitchesCount + " Stateful trigger switchServices");
+      for (let i = 0, c = this.statefulSwitchesCount; i < c; i += 1) {
+        this.switchServices.push((new OccupancyTriggerSwitch(this, {
+            name: "Main Stateful " + i.toString(),
+            stayOnOnly: false,
+            isTrigger: false,
+            isMotion: false,
+        }))._service);
+      }
     }
     /* Make the triggerSwitches */
-    this.log.debug("Making " + this.triggerSwitchesCount + " Trigger trigger switchServices");
-    for (let i = 0, c = this.triggerSwitchesCount; i < c; i += 1) {
-      this.switchServices.push((new OccupancyTriggerSwitch(this, {
-          name: "Main Trigger " + i.toString(),
-          stayOnOnly: false,
-          isTrigger: true,
-          isMotion: false,
-      }))._service);
+    if(this.triggerSwitchesCount > 0) {
+      this.log.debug("Making " + this.triggerSwitchesCount + " Trigger trigger switchServices");
+      for (let i = 0, c = this.triggerSwitchesCount; i < c; i += 1) {
+        this.switchServices.push((new OccupancyTriggerSwitch(this, {
+            name: "Main Trigger " + i.toString(),
+            stayOnOnly: false,
+            isTrigger: true,
+            isMotion: false,
+        }))._service);
+      }
     }
     /* Make the motionSwitches */
-    this.log.debug("Making " + this.motionSwitchesCount + " Motion trigger switchServices");
-    for (let i = 0, c = this.motionSwitchesCount; i < c; i += 1) {
-      this.switchServices.push((new OccupancyTriggerSwitch(this, {
-          name: "Main Motion " + i.toString(),
-          stayOnOnly: false,
-          isTrigger: true,
-          isMotion: true,
-      }))._service);
+    if(this.motionSwitchesCount > 0) {
+      this.log.debug("Making " + this.motionSwitchesCount + " Motion trigger switchServices");
+      for (let i = 0, c = this.motionSwitchesCount; i < c; i += 1) {
+        this.switchServices.push((new OccupancyTriggerSwitch(this, {
+            name: "Main Motion " + i.toString(),
+            stayOnOnly: false,
+            isTrigger: true,
+            isMotion: true,
+        }))._service);
+      }
     }
 
     /* Make the statefulStayOnSwitches */
-    this.log.debug("Making " + this.statefulStayOnSwitchesCount + " StayOn Stateful trigger switchServices");
-    for (let i = 0, c = this.statefulStayOnSwitchesCount; i < c; i += 1) {
-      this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
-          name: "StayOn Stateful " + i.toString(),
-          stayOnOnly: true,
-          isTrigger: false,
-          isMotion: false,
-      }))._service);
+    if(this.statefulStayOnSwitchesCount > 0) {
+      this.log.debug("Making " + this.statefulStayOnSwitchesCount + " StayOn Stateful trigger switchServices");
+      for (let i = 0, c = this.statefulStayOnSwitchesCount; i < c; i += 1) {
+        this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
+            name: "StayOn Stateful " + i.toString(),
+            stayOnOnly: true,
+            isTrigger: false,
+            isMotion: false,
+        }))._service);
+      }
     }
     /* Make the triggerStayOnSwitches */
-    this.log.debug("Making " + this.triggerStayOnSwitchesCount + " StayOn Trigger trigger switchServices");
-    for (let i = 0, c = this.triggerStayOnSwitchesCount; i < c; i += 1) {
-      this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
-          name: "StayOn Trigger " + i.toString(),
-          stayOnOnly: true,
-          isTrigger: true,
-          isMotion: false,
-      }))._service);
+    if(this.triggerStayOnSwitchesCount > 0) {
+      this.log.debug("Making " + this.triggerStayOnSwitchesCount + " StayOn Trigger trigger switchServices");
+      for (let i = 0, c = this.triggerStayOnSwitchesCount; i < c; i += 1) {
+        this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
+            name: "StayOn Trigger " + i.toString(),
+            stayOnOnly: true,
+            isTrigger: true,
+            isMotion: false,
+        }))._service);
+      }
     }
     /* Make the motionStayOnSwitches */
-    this.log.debug("Making " + this.motionStayOnSwitchesCount + " StayOn Motion trigger switchServices");
-    for (let i = 0, c = this.motionStayOnSwitchesCount; i < c; i += 1) {
-      this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
-          name: "StayOn Motion " + i.toString(),
-          stayOnOnly: true,
-          isTrigger: true,
-          isMotion: true,
-      }))._service);
+    if(this.motionStayOnSwitchesCount > 0) {
+      this.log.debug("Making " + this.motionStayOnSwitchesCount + " StayOn Motion trigger switchServices");
+      for (let i = 0, c = this.motionStayOnSwitchesCount; i < c; i += 1) {
+        this.stayOnServices.push((new OccupancyTriggerSwitch(this, {
+            name: "StayOn Motion " + i.toString(),
+            stayOnOnly: true,
+            isTrigger: true,
+            isMotion: true,
+        }))._service);
+      }
     }
 
     //Create master shutoff
     if(config.createMasterShutoff == true) {
       this.masterShutoffService = (new MasterShutoffSwitch(this))._service;
     }
+
+    //Handle start on reboot
+    if(this.startOnReboot) {
+      this.log(
+        `startOnReboot==true - setting to active`
+      );
+      setOccupancyDetected();
+    }
+
+    //We're up!
+    this.initializationCompleted = true;
+    this.checkOccupancy(10);
   }
 
   /**
    * startUnoccupiedDelays the countdown timer.
    */
   startUnoccupiedDelay() {
+    this.locksCounter += 1;
     if(this._last_occupied_state === false) {
       this.setOccupancyNotDetected();
       return;
@@ -236,6 +265,7 @@ class MagicOccupancy {
       /* occupancy no longer detected */
       this.setOccupancyNotDetected();
     }
+    this.locksCounter -= 1;
   }
 
   /**
@@ -254,6 +284,7 @@ class MagicOccupancy {
   }
 
   setOccupancyDetected() {
+    this.locksCounter += 1;
     this.stop();
     this._last_occupied_state = true;
     this.occupancyService.setCharacteristic(
@@ -273,9 +304,11 @@ class MagicOccupancy {
         Math.round(this.maxOccupationTimeout * 1000)
       );
     }
+    this.locksCounter -= 1;
   }
 
   setOccupancyNotDetected() {
+    this.locksCounter += 1;
     this._last_occupied_state = false;
     this.wasTurnedOnByTriggerSwitch = false;
     this.stop();
@@ -317,6 +350,7 @@ class MagicOccupancy {
     for (let i = 0; i < this.stayOnServices.length; i += 1) {
       shutoff_switch(this.stayOnServices[i]);
     }
+    this.locksCounter -= 1;
   }
 
   /**
@@ -324,7 +358,24 @@ class MagicOccupancy {
    * Occupancy Sensor will remain "Occupied". This is used as a callback when
    * the "On" state changes on any of the trigger switchServices.
    */
-  checkOccupancy() {
+  checkOccupancy(timeoutUntilCheck = 0) {
+    if(this.locksCounter > 0) {
+      this.log.debug(`checking occupancy waiting - in lockout state for at least 300ms`);
+      timeoutUntilCheck = Math.max(300, timeoutUntilCheck);
+    }
+
+    if(timeoutUntilCheck > 0) {
+      if(!this.isPendingCheckOccupancy) {
+        this.isPendingCheckOccupancy = true;
+        setTimeout(function() {
+          this.checkOccupancy();
+        }.bind(this), timeoutUntilCheck);
+      }
+      return;
+    }
+
+    this.locksCounter += 1;
+    this.isPendingCheckOccupancy = false;
     this.log.debug(`checking occupancy. Total: ${this.switchServices.length}`);
 
     var switchesToCheck = [];
@@ -347,6 +398,7 @@ class MagicOccupancy {
       this.log(
         `checkOccupancy result: ${occupiedSwitchCount}. Previous occupied state: ${previousOccupiedState}, current: ${this._last_occupied_state}`
       );
+      this.locksCounter -= 1;
 
     };
 
@@ -435,6 +487,12 @@ class OccupancyTriggerSwitch {
   }
 
   _setOn(on, callback) {
+    //Make sure we're actually full initialized
+    if(!this.occupancySensor.initializationCompleted) {
+      callback();
+      return;
+    }
+
     //Early return to break out on shutoff events when all switches are shutoff (like if master shutoff is triggered)
     if(!on && this.occupancySensor._last_occupied_state === false) {
       this.log("Setting " + this.name + " to off and bypassing all events");
@@ -471,9 +529,7 @@ class OccupancyTriggerSwitch {
 
     //Only dispatch appropriate events - all events from non stay-on and only from stay ons when on
     if(!this.stayOnOnly || this.occupancySensor._last_occupied_state === true) {
-      setTimeout(function() {
-        this.occupancySensor.checkOccupancy();
-      }.bind(this), 10);
+      this.occupancySensor.checkOccupancy(10);
     }
   }
 }
@@ -496,15 +552,22 @@ class MasterShutoffSwitch {
   }
 
   _setOn(on, callback) {
+    //Make sure we're actually full initialized
+    if(!this.occupancySensor.initializationCompleted) {
+      callback();
+      return;
+    }
 
 
     if(on) {
       this.log("Setting master shutoff switch to on, killing everything");
 
+      this.occupancySensor.locksCounter += 1;
       setTimeout(function() {
         this.occupancySensor.setOccupancyNotDetected();
         this._service.setCharacteristic(Characteristic.On, false);
       }.bind(this), 1);
+      this.occupancySensor.locksCounter -= 1;
 
     }
 
