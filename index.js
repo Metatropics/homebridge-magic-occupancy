@@ -279,9 +279,7 @@ class MagicOccupancy {
             Characteristic.TimeRemaining,
             newValue
           );
-          if(this.persistBetweenReboots) {
-            this.saveCachedState('TimeRemaining', newValue);
-          }
+          this.saveCachedState('TimeRemaining', newValue);
           this._interval_last_value = newValue;
         }
       }, 250);
