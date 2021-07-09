@@ -83,6 +83,7 @@ class MagicOccupancy {
     this.stayOccupiedDelay = Math.min(3600, Math.max(0, parseInt(config.stayOccupiedDelay || 0, 10) || 0));
     this.maxOccupationTimeout = Math.max(0, parseInt(config.maxOccupationTimeout || 0, 10) || 0)
     this.ignoreStatefulIfTurnedOnByTrigger = (config.ignoreStatefulIfTurnedOnByTrigger == true);
+    this.persistBetweenReboots = config.persistBetweenReboots != false;
     this.startOnReboot = config.startOnReboot || false;
     this.wasTurnedOnByTriggerSwitch = false;
     this.triggerSwitchToggleTimeout = 1000;
@@ -92,12 +93,19 @@ class MagicOccupancy {
 
     this._max_occupation_timer = null;
 
+    this.cacheDirectory = HomebridgeAPI.user.persistPath();
+    this.storage = require("node-persist");
+    this.storage.initSync({
+      dir: this.cacheDirectory,
+      forgiveParseErrors: true,
+    });
+
     this._timer = null;
     this._timer_started = null;
     this._timer_delay = 0;
     this._interval = null;
     this._interval_last_value = 0;
-    this._last_occupied_state = false;
+    this._last_occupied_state = this.getCachedState('LastOccState', false);
 
     this.switchServices = [];
     this.stayOnServices = [];
@@ -121,7 +129,15 @@ class MagicOccupancy {
       });
 
     this.occupancyService.addCharacteristic(Characteristic.TimeRemaining);
-    this.occupancyService.setCharacteristic(Characteristic.TimeRemaining, 0);
+    const initializationTimeRemaining = this.getCachedState('TimeRemaining', 0);
+    this.occupancyService.setCharacteristic(Characteristic.TimeRemaining, initializationTimeRemaining);
+
+    //Restore past state
+    const initializationOccupationState = this.getCachedState('OCC', 0);
+    this.occupancyService.setCharacteristic(
+      Characteristic.OccupancyDetected,
+      initializationOccupationState
+    );
 
     this.occupancyService
       .getCharacteristic(Characteristic.TimeRemaining)
@@ -131,13 +147,6 @@ class MagicOccupancy {
           this.setOccupancyNotDetected();
         }
       });
-
-    this.cacheDirectory = HomebridgeAPI.user.persistPath();
-    this.storage = require("node-persist");
-    this.storage.initSync({
-      dir: this.cacheDirectory,
-      forgiveParseErrors: true,
-    });
 
     /* Make the statefulSwitches */
     if(this.statefulSwitchesCount > 0) {
@@ -218,6 +227,9 @@ class MagicOccupancy {
       this.masterShutoffService = (new MasterShutoffSwitch(this))._service;
     }
 
+    //Mark that we're done initializing here, final setup below
+    this.initializationCompleted = true;
+
     //Handle start on reboot
     if(this.startOnReboot) {
       this.log(
@@ -229,16 +241,19 @@ class MagicOccupancy {
         this.checkOccupancy(10);
       }.bind(this), 10000);
     }
+    //Handle restoring state - gotta restart the decaying timer if we rebooted
+    else if (this.persistBetweenReboots && this._last_occupied_state == false && initializationOccupationState == Characteristic.OccupancyDetected.OCCUPANCY_DETECTED) {
+      this.startUnoccupiedDelay(initializationTimeRemaining);
+    }
 
-    //We're up!
-    this.initializationCompleted = true;
+    //Do an initial occupancy check
     this.checkOccupancy(10);
   }
 
   /**
    * startUnoccupiedDelays the countdown timer.
    */
-  startUnoccupiedDelay() {
+  startUnoccupiedDelay(overrideTimeRemaining = null) {
     this.locksCounter += 1;
     if(this._last_occupied_state === false) {
       this.setOccupancyNotDetected();
@@ -254,7 +269,7 @@ class MagicOccupancy {
         this.setOccupancyNotDetected.bind(this),
         Math.round(this.stayOccupiedDelay * 1000)
       );
-      this._timer_delay = this.stayOccupiedDelay;
+      this._timer_delay = overrideTimeRemaining || this.stayOccupiedDelay;
       this._interval = setInterval(() => {
         var elapsed = (new Date().getTime() - this._timer_started) / 1000,
           newValue = Math.round(this._timer_delay - elapsed);
@@ -264,6 +279,9 @@ class MagicOccupancy {
             Characteristic.TimeRemaining,
             newValue
           );
+          if(this.persistBetweenReboots) {
+            this.saveCachedState('TimeRemaining', newValue);
+          }
           this._interval_last_value = newValue;
         }
       }, 250);
@@ -289,19 +307,48 @@ class MagicOccupancy {
     }
   }
 
+  //Helper to get a cached state value
+  getCachedState(key, defaultValue) {
+    if(!this.persistBetweenReboots) {
+      return defaultValue;
+    }
+
+    const cachedValue = this.storage.getItemSync(this.name + '-HMO-' + key);
+
+    if(cachedValue == undefined || cachedValue == null) {
+      return defaultValue;
+    }
+
+    return cachedValue;
+  }
+  //Helper to set/save a cached state value
+  saveCachedState(key, value) {
+    if(!this.persistBetweenReboots) {
+      return;
+    }
+
+    this.storage.setItemSync(this.name + '-HMO-' + key, value);
+  }
+
   setOccupancyDetected() {
     this.locksCounter += 1;
     this.stop();
+
     this._last_occupied_state = true;
+    this.saveCachedState('LastOccState', true);
+
     this.occupancyService.setCharacteristic(
       Characteristic.OccupancyDetected,
       Characteristic.OccupancyDetected.OCCUPANCY_DETECTED
     );
+    this.saveCachedState('OCC', Characteristic.OccupancyDetected.OCCUPANCY_DETECTED);
+
     if (this.stayOccupiedDelay) {
       this.occupancyService.setCharacteristic(
         Characteristic.TimeRemaining,
         this.stayOccupiedDelay
       );
+      this.saveCachedState('TimeRemaining', this.stayOccupiedDelay);
     }
 
     if(this.maxOccupationTimeout > 0 && this._max_occupation_timer == null) {
@@ -315,15 +362,22 @@ class MagicOccupancy {
 
   setOccupancyNotDetected() {
     this.locksCounter += 1;
+
     this._last_occupied_state = false;
+    this.saveCachedState('LastOccState', false);
+
     this.wasTurnedOnByTriggerSwitch = false;
     this.stop();
+
     this.occupancyService.setCharacteristic(
       Characteristic.OccupancyDetected,
       Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED
     );
+    this.saveCachedState('OCC', Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED);
+
     if (this.stayOccupiedDelay) {
       this.occupancyService.setCharacteristic(Characteristic.TimeRemaining, 0);
+      this.saveCachedState('TimeRemaining', 0);
     }
 
     if(this.maxOccupationTimeout > 0 && this._max_occupation_timer == null) {
@@ -476,19 +530,11 @@ class OccupancyTriggerSwitch {
     this.timer = null;
     this._service = new Service.Switch(this.name, this.name);
 
-    this.cacheDirectory = occupancySensor.cacheDirectory;
-    this.storage = occupancySensor.storage;
-
     this._service.getCharacteristic(Characteristic.On)
       .on('set', this._setOn.bind(this));
 
     if (this.stateful) {
-      var cachedState = this.storage.getItemSync(this.name);
-      if((cachedState === undefined) || (cachedState === false)) {
-        this._service.setCharacteristic(Characteristic.On, false);
-      } else {
-        this._service.setCharacteristic(Characteristic.On, true);
-      }
+      this._service.setCharacteristic(Characteristic.On, this.occupancySensor.getCachedState('SW-' + this.name, false));
     }
   }
 
@@ -498,6 +544,11 @@ class OccupancyTriggerSwitch {
       this.log.debug("Setting " + this.name + " initial state and bypassing all events");
       callback();
       return;
+    }
+
+    //Cache our previous state for restoration
+    if (this.stateful) {
+      this.occupancySensor.saveCachedState('SW-' + this.name, on);
     }
 
     //Early return to break out on shutoff events when all switches are shutoff (like if master shutoff is triggered)
@@ -548,9 +599,6 @@ class MasterShutoffSwitch {
     this.occupancySensor = occupancySensor;
     this.name = occupancySensor.name + " Master Shutoff";
     this._service = new Service.Switch(this.name, this.name);
-
-    this.cacheDirectory = occupancySensor.cacheDirectory;
-    this.storage = occupancySensor.storage;
 
     this._service.setCharacteristic(Characteristic.On, false);
     this._service.getCharacteristic(Characteristic.On)

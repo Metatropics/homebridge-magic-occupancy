@@ -14,6 +14,12 @@
                 "title": "Stay Occupied Delay",
                 "type": "number"
             },
+            "persistBetweenReboots": {
+                "default": true,
+                "description": "Whether the occupancy sensor and its switches should restore their previous states on Homebridge restart",
+                "title": "Persist State Between Reboots",
+                "type": "boolean"
+            },
             "startOnReboot": {
                 "default": false,
                 "description": "Whether the occupancy sensor should always initialize as triggered (occupied) on reboot regardless of prior status.",
