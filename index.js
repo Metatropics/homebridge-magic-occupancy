@@ -372,6 +372,7 @@ class MagicOccupancy {
       if(!this.isPendingCheckOccupancy) {
         this.isPendingCheckOccupancy = true;
         setTimeout(function() {
+          this.isPendingCheckOccupancy = false;
           this.checkOccupancy();
         }.bind(this), timeoutUntilCheck);
       }
@@ -379,7 +380,6 @@ class MagicOccupancy {
     }
 
     this.locksCounter += 1;
-    this.isPendingCheckOccupancy = false;
     this.log.debug(`checking occupancy. Total: ${this.switchServices.length}`);
 
     var switchesToCheck = [];
