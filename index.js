@@ -222,7 +222,11 @@ class MagicOccupancy {
       this.log(
         `startOnReboot==true - setting to active`
       );
-      this.setOccupancyDetected();
+      //Run the set after homebridge should have booted to ensure events fire
+      setTimeout(function() {
+        this.setOccupancyDetected();
+        this.checkOccupancy(10);
+      }.bind(this), 10000);
     }
 
     //We're up!
