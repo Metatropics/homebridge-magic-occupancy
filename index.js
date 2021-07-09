@@ -100,12 +100,18 @@ class MagicOccupancy {
       forgiveParseErrors: true,
     });
 
+    const savedState = this.getCachedState("_MAIN", {
+      '_last_occupied_state': false,
+      'TimeRemaining' : 0,
+      'OccupancyDetected': Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED,
+    })
+
     this._timer = null;
     this._timer_started = null;
     this._timer_delay = 0;
     this._interval = null;
     this._interval_last_value = 0;
-    this._last_occupied_state = this.getCachedState('LastOccState', false);
+    this._last_occupied_state = savedState._last_occupied_state;
 
     this.switchServices = [];
     this.stayOnServices = [];
@@ -129,14 +135,14 @@ class MagicOccupancy {
       });
 
     this.occupancyService.addCharacteristic(Characteristic.TimeRemaining);
-    const initializationTimeRemaining = this.getCachedState('TimeRemaining', 0);
-    this.occupancyService.setCharacteristic(Characteristic.TimeRemaining, initializationTimeRemaining);
+    if(this.stayOccupiedDelay) {
+      this.occupancyService.setCharacteristic(Characteristic.TimeRemaining, savedState.TimeRemaining);
+    }
 
     //Restore past state
-    const initializationOccupationState = this.getCachedState('OCC', 0);
     this.occupancyService.setCharacteristic(
       Characteristic.OccupancyDetected,
-      initializationOccupationState
+      savedState.OccupancyDetected
     );
 
     this.occupancyService
@@ -242,8 +248,8 @@ class MagicOccupancy {
       }.bind(this), 10000);
     }
     //Handle restoring state - gotta restart the decaying timer if we rebooted
-    else if (this.persistBetweenReboots && this._last_occupied_state == false && initializationOccupationState == Characteristic.OccupancyDetected.OCCUPANCY_DETECTED) {
-      this.startUnoccupiedDelay(initializationTimeRemaining);
+    else if (this.persistBetweenReboots && this._last_occupied_state == false && savedState.OccupationDetected == Characteristic.OccupancyDetected.OCCUPANCY_DETECTED) {
+      this.startUnoccupiedDelay(this.stayOccupiedDelay ? savedState.TimeRemaining : 0);
     }
 
     //Do an initial occupancy check
@@ -254,39 +260,48 @@ class MagicOccupancy {
    * startUnoccupiedDelays the countdown timer.
    */
   startUnoccupiedDelay(overrideTimeRemaining = null) {
-    this.locksCounter += 1;
-    if(this._last_occupied_state === false) {
+    if(this._last_occupied_state === false || (this.stayOccupiedDelay || 0) == 0) {
       this.setOccupancyNotDetected();
-      this.locksCounter -= 1;
       return;
     }
 
+    this.locksCounter += 1;
+
     this.stop();
+
     this._timer_started = new Date().getTime();
     this.log("Timer startUnoccupiedDelayed:", this.stayOccupiedDelay);
-    if (this.stayOccupiedDelay > 0) {
-      this._timer = setTimeout(
-        this.setOccupancyNotDetected.bind(this),
-        Math.round(this.stayOccupiedDelay * 1000)
-      );
-      this._timer_delay = overrideTimeRemaining || this.stayOccupiedDelay;
-      this._interval = setInterval(() => {
-        var elapsed = (new Date().getTime() - this._timer_started) / 1000,
-          newValue = Math.round(this._timer_delay - elapsed);
 
-        if (newValue !== this._interval_last_value) {
-          this.occupancyService.setCharacteristic(
-            Characteristic.TimeRemaining,
-            newValue
-          );
-          this.saveCachedState('TimeRemaining', newValue);
-          this._interval_last_value = newValue;
-        }
-      }, 250);
-    } else {
-      /* occupancy no longer detected */
-      this.setOccupancyNotDetected();
-    }
+    this._timer = setTimeout(
+      this.setOccupancyNotDetected.bind(this),
+      Math.round(this.stayOccupiedDelay * 1000)
+    );
+    this._timer_delay = overrideTimeRemaining || this.stayOccupiedDelay;
+    this._interval = setInterval(() => {
+      var elapsed = (new Date().getTime() - this._timer_started) / 1000,
+        newValue = Math.round(this._timer_delay - elapsed);
+
+      if (newValue !== this._interval_last_value) {
+        this.occupancyService.setCharacteristic(
+          Characteristic.TimeRemaining,
+          newValue
+        );
+        this._interval_last_value = newValue;
+
+        this.saveCachedState("_MAIN", {
+          '_last_occupied_state': this._last_occupied_state,
+          'TimeRemaining' : newValue,
+          'OccupancyDetected': Characteristic.OccupancyDetected.OCCUPANCY_DETECTED,
+        });
+      }
+    }, 250);
+
+    this.saveCachedState("_MAIN", {
+      '_last_occupied_state': this._last_occupied_state,
+      'TimeRemaining' : this.stayOccupiedDelay,
+      'OccupancyDetected': Characteristic.OccupancyDetected.OCCUPANCY_DETECTED,
+    });
+
     this.locksCounter -= 1;
   }
 
@@ -310,6 +325,7 @@ class MagicOccupancy {
     if(!this.persistBetweenReboots) {
       return defaultValue;
     }
+    this.log.debug(`Loading cached value for ${key}`);
 
     const cachedValue = this.storage.getItemSync(this.name + '-HMO-' + key);
 
@@ -325,28 +341,26 @@ class MagicOccupancy {
       return;
     }
 
-    this.storage.setItemSync(this.name + '-HMO-' + key, value);
+    setTimeout(function() {
+      this.storage.setItemSync(this.name + '-HMO-' + key, value);
+    }.bind(this), 10);
   }
 
   setOccupancyDetected() {
     this.locksCounter += 1;
     this.stop();
 
-    this._last_occupied_state = true;
-    this.saveCachedState('LastOccState', true);
-
     this.occupancyService.setCharacteristic(
       Characteristic.OccupancyDetected,
       Characteristic.OccupancyDetected.OCCUPANCY_DETECTED
     );
-    this.saveCachedState('OCC', Characteristic.OccupancyDetected.OCCUPANCY_DETECTED);
+    this._last_occupied_state = true;
 
     if (this.stayOccupiedDelay) {
       this.occupancyService.setCharacteristic(
         Characteristic.TimeRemaining,
         this.stayOccupiedDelay
       );
-      this.saveCachedState('TimeRemaining', this.stayOccupiedDelay);
     }
 
     if(this.maxOccupationTimeout > 0 && this._max_occupation_timer == null) {
@@ -355,27 +369,32 @@ class MagicOccupancy {
         Math.round(this.maxOccupationTimeout * 1000)
       );
     }
+
+    //Save state
+    this.saveCachedState("_MAIN", {
+      '_last_occupied_state': this._last_occupied_state,
+      'TimeRemaining' : this.stayOccupiedDelay || 0,
+      'OccupancyDetected': Characteristic.OccupancyDetected.OCCUPANCY_DETECTED,
+    });
+
     this.locksCounter -= 1;
   }
 
   setOccupancyNotDetected() {
     this.locksCounter += 1;
-
-    this._last_occupied_state = false;
-    this.saveCachedState('LastOccState', false);
-
-    this.wasTurnedOnByTriggerSwitch = false;
     this.stop();
+
+    //Reset was turned on by trigger
+    this.wasTurnedOnByTriggerSwitch = false;
 
     this.occupancyService.setCharacteristic(
       Characteristic.OccupancyDetected,
       Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED
     );
-    this.saveCachedState('OCC', Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED);
+    this._last_occupied_state = false;
 
     if (this.stayOccupiedDelay) {
       this.occupancyService.setCharacteristic(Characteristic.TimeRemaining, 0);
-      this.saveCachedState('TimeRemaining', 0);
     }
 
     if(this.maxOccupationTimeout > 0 && this._max_occupation_timer == null) {
@@ -408,6 +427,14 @@ class MagicOccupancy {
     for (let i = 0; i < this.stayOnServices.length; i += 1) {
       shutoff_switch(this.stayOnServices[i]);
     }
+
+    //Save state
+    this.saveCachedState("_MAIN", {
+      '_last_occupied_state': this._last_occupied_state,
+      'TimeRemaining' : 0,
+      'OccupancyDetected': Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED,
+    });
+
     this.locksCounter -= 1;
   }
 
@@ -418,8 +445,8 @@ class MagicOccupancy {
    */
   checkOccupancy(timeoutUntilCheck = 0) {
     if(this.locksCounter > 0) {
-      this.log.debug(`checking occupancy waiting for ${this.locksCounter} to clear; waiting for at least 300ms`);
-      timeoutUntilCheck = Math.max(300, timeoutUntilCheck);
+      this.log(`checking occupancy waiting for ${this.locksCounter} to clear; waiting for at least 100ms`);
+      timeoutUntilCheck = Math.max(100, timeoutUntilCheck);
     }
 
     if(timeoutUntilCheck > 0) {
