@@ -85,6 +85,7 @@ class MagicOccupancy {
     this.ignoreStatefulIfTurnedOnByTrigger = (config.ignoreStatefulIfTurnedOnByTrigger == true);
     this.startOnReboot = config.startOnReboot || false;
     this.wasTurnedOnByTriggerSwitch = false;
+    this.triggerSwitchToggleTimeout = 1000;
     this.initializationCompleted = false;
     this.locksCounter = 0;
     this.isPendingCheckOccupancy = false;
@@ -472,7 +473,6 @@ class OccupancyTriggerSwitch {
     this.isMotion = config.isMotion;
     this.isTrigger = config.isTrigger || config.isMotion;
     this.stateful = !config.isTrigger;
-    this.time = 2000;
     this.timer = null;
     this._service = new Service.Switch(this.name, this.name);
 
@@ -529,7 +529,7 @@ class OccupancyTriggerSwitch {
         if (!treatStateful && on) {
           this._service.setCharacteristic(Characteristic.On, false);
         }
-      }.bind(this), this.time);
+      }.bind(this), this.occupancySensor.triggerSwitchToggleTimeout);
     }
 
     callback();
@@ -570,11 +570,13 @@ class MasterShutoffSwitch {
       this.log("Setting master shutoff switch to on, killing everything");
 
       this.occupancySensor.locksCounter += 1;
+
+      this.occupancySensor.setOccupancyNotDetected();
       setTimeout(function() {
-        this.occupancySensor.setOccupancyNotDetected();
         this._service.setCharacteristic(Characteristic.On, false);
+        this.occupancySensor.checkOccupancy();
         this.occupancySensor.locksCounter -= 1;
-      }.bind(this), 1);
+      }.bind(this), this.occupancySensor.triggerSwitchToggleTimeout);
 
     }
 
