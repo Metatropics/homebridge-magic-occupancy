@@ -14,6 +14,12 @@
                 "title": "Stay Occupied Delay",
                 "type": "number"
             },
+            "startOnReboot": {
+                "default": false,
+                "description": "Whether the occupancy sensor should always initialize as triggered (occupied) on reboot regardless of prior status.",
+                "title": "Always Start as Occupied on Reboot",
+                "type": "boolean"
+            },
             "maxOccupationTimeout": {
                 "description": "How long in seconds is the absolute max time a room can stay occupied for (regardless of switch activity). Set 0 or blank to run forever.",
                 "title": "Absolute Max Occupation Time (auto-shutoff)",
