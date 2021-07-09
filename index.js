@@ -85,6 +85,7 @@ class MagicOccupancy {
     this.ignoreStatefulIfTurnedOnByTrigger = (config.ignoreStatefulIfTurnedOnByTrigger == true);
     this.startOnReboot = config.startOnReboot || false;
     this.wasTurnedOnByTriggerSwitch = false;
+    this.initializationCompleted = false;
     this.locksCounter = 0;
     this.isPendingCheckOccupancy = false;
 
@@ -210,8 +211,11 @@ class MagicOccupancy {
         `startOnReboot==true - setting to active`
       );
       setOccupancyDetected();
-      checkOccupancy(10);
     }
+
+    //We're up!
+    this.initializationCompleted = true;
+    checkOccupancy(10);
   }
 
   /**
@@ -471,6 +475,12 @@ class OccupancyTriggerSwitch {
   }
 
   _setOn(on, callback) {
+    //Make sure we're actually full initialized
+    if(!this.occupancySensor.initializationCompleted) {
+      callback();
+      return;
+    }
+
     //Early return to break out on shutoff events when all switches are shutoff (like if master shutoff is triggered)
     if(!on && this.occupancySensor._last_occupied_state === false) {
       this.log("Setting " + this.name + " to off and bypassing all events");
@@ -530,6 +540,11 @@ class MasterShutoffSwitch {
   }
 
   _setOn(on, callback) {
+    //Make sure we're actually full initialized
+    if(!this.occupancySensor.initializationCompleted) {
+      callback();
+      return;
+    }
 
 
     if(on) {
