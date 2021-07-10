@@ -177,6 +177,9 @@ class MagicOccupancy {
     if(this.lightSwitchesNames.length > 0) {
       this.log.debug("Making " + this.lightSwitchesNames.length + " Light Switch switchServices");
       this.lightSwitchesNames.forEach(function(switchName) {
+        if(switchName.length == 0) {
+          return true; //continue
+        }
         this.switchServices.push((new LightSwitchMirrorSwitch(this, {
             name: switchName,
             stayOnOnly: false,
@@ -187,6 +190,9 @@ class MagicOccupancy {
     if(this.statefulSwitchesNames.length > 0) {
       this.log.debug("Making " + this.statefulSwitchesNames.length + " Stateful trigger switchServices");
       this.statefulSwitchesNames.forEach(function(switchName) {
+        if(switchName.length == 0) {
+          return true; //continue
+        }
         this.switchServices.push((new StatefulSwitch(this, {
             name: switchName,
             stayOnOnly: false,
@@ -197,6 +203,9 @@ class MagicOccupancy {
     if(this.triggerSwitchesNames.length > 0) {
       this.log.debug("Making " + this.triggerSwitchesNames.length + " Trigger trigger switchServices");
       this.triggerSwitchesNames.forEach(function(switchName) {
+        if(switchName.length == 0) {
+          return true; //continue
+        }
         this.switchServices.push((new TriggerSwitch(this, {
             name: switchName,
             stayOnOnly: false,
@@ -207,6 +216,9 @@ class MagicOccupancy {
     if(this.motionSwitchesNames.length > 0) {
       this.log.debug("Making " + this.motionSwitchesNames.length + " Motion trigger switchServices");
       this.motionSwitchesNames.forEach(function(switchName) {
+        if(switchName.length == 0) {
+          return true; //continue
+        }
         this.switchServices.push((new MotionSensorSwitch(this, {
             name: switchName,
             stayOnOnly: false,
@@ -218,6 +230,9 @@ class MagicOccupancy {
     if(this.statefulStayOnSwitchesNames.length > 0) {
       this.log.debug("Making " + this.statefulStayOnSwitchesNames.length + " StayOn Stateful trigger switchServices");
       this.statefulStayOnSwitchesNames.forEach(function(switchName) {
+        if(switchName.length == 0) {
+          return true; //continue
+        }
         this.switchServices.push((new StatefulSwitch(this, {
             name: switchName,
             stayOnOnly: true,
@@ -228,6 +243,9 @@ class MagicOccupancy {
     if(this.triggerStayOnSwitchesNames.length > 0) {
       this.log.debug("Making " + this.triggerStayOnSwitchesNames.length + " StayOn Trigger trigger switchServices");
       this.triggerStayOnSwitchesNames.forEach(function(switchName) {
+        if(switchName.length == 0) {
+          return true; //continue
+        }
         this.switchServices.push((new TriggerSwitch(this, {
             name: switchName,
             stayOnOnly: true,
@@ -238,6 +256,9 @@ class MagicOccupancy {
     if(this.motionStayOnSwitchesNames.length > 0) {
       this.log.debug("Making " + this.motionStayOnSwitchesNames.length + " StayOn Motion trigger switchServices");
       this.motionStayOnSwitchesNames.forEach(function(switchName) {
+        if(switchName.length == 0) {
+          return true; //continue
+        }
         this.switchServices.push((new MotionSensorSwitch(this, {
             name: switchName,
             stayOnOnly: true,
