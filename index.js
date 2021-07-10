@@ -412,7 +412,7 @@ class MagicOccupancy {
     this._last_occupied_state = newVal;
     this.occupancyService.setCharacteristic(
       Characteristic.OccupancyDetected,
-      newVal ? Characteristic.OccupationDetected.OCCUPANCY_DETECTED : Characteristic.OccupationDetected.OCCUPANCY_NOT_DETECTED
+      newVal ? Characteristic.OccupancyDetected.OCCUPANCY_DETECTED : Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED
     );
   }
 
@@ -470,7 +470,7 @@ class MagicOccupancy {
    */
   checkOccupancy(timeoutUntilCheck = 0) {
     if(this.locksCounter > 0) {
-      this.log(`checking occupancy waiting for ${this.locksCounter} to clear; waiting for at least 100ms`);
+      this.log.debug(`checking occupancy waiting for ${this.locksCounter} to clear; waiting for at least 100ms`);
       timeoutUntilCheck = Math.max(100, timeoutUntilCheck);
     }
 
