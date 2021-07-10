@@ -728,6 +728,8 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
     //Make this switch match the big boi
     this.occupancySensor.occupancyService.getCharacteristic(Characteristic.OccupancyDetected)
       .on('set', function(occVal, callback) {
+        callback();
+
         this._service
           .getCharacteristic(Characteristic.On)
           .getValue(function(err, value) {
@@ -742,6 +744,7 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
               this._service.setCharacteristic(Characteristic.On, this.occupancySensor._last_occupied_state);
             }
           }.bind(this));
+
       }.bind(this))
   }
 
