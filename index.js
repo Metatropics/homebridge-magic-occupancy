@@ -540,7 +540,7 @@ class MagicOccupancy {
           }
 
           handleResponse(value);
-      });
+      }.bind(this));
     }
 
     if(switchesToCheck.length == 0 && this._last_occupied_state == true) {
