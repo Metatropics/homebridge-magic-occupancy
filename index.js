@@ -124,7 +124,6 @@ class MagicOccupancy {
     const savedState = this.getCachedState("_MAIN", {
       '_last_occupied_state': false,
       'TimeRemaining' : 0,
-      'OccupancyDetected': Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED,
     })
 
     this._timer = null;
@@ -132,7 +131,6 @@ class MagicOccupancy {
     this._timer_delay = 0;
     this._interval = null;
     this._interval_last_value = 0;
-    this._last_occupied_state = savedState._last_occupied_state;
 
     this.switchServices = [];
     this.occupancyService = new Service.OccupancySensor(this.name);
@@ -159,10 +157,7 @@ class MagicOccupancy {
     }
 
     //Restore past state
-    this.occupancyService.setCharacteristic(
-      Characteristic.OccupancyDetected,
-      savedState.OccupancyDetected
-    );
+    this._setOccupancyState(savedState._last_occupied_state)
 
     this.occupancyService
       .getCharacteristic(Characteristic.TimeRemaining)
@@ -288,7 +283,7 @@ class MagicOccupancy {
       }.bind(this), 10000);
     }
     //Handle restoring state - gotta restart the decaying timer if we rebooted
-    else if (this.persistBetweenReboots && this._last_occupied_state == false && savedState.OccupationDetected == Characteristic.OccupancyDetected.OCCUPANCY_DETECTED) {
+    else if (this.persistBetweenReboots && this._last_occupied_state == true) {
       this.startUnoccupiedDelay(this.stayOccupiedDelay ? savedState.TimeRemaining : 0);
     }
 
@@ -331,7 +326,6 @@ class MagicOccupancy {
         this.saveCachedState("_MAIN", {
           '_last_occupied_state': this._last_occupied_state,
           'TimeRemaining' : newValue,
-          'OccupancyDetected': Characteristic.OccupancyDetected.OCCUPANCY_DETECTED,
         });
       }
     }, 250);
@@ -339,7 +333,6 @@ class MagicOccupancy {
     this.saveCachedState("_MAIN", {
       '_last_occupied_state': this._last_occupied_state,
       'TimeRemaining' : this.stayOccupiedDelay,
-      'OccupancyDetected': Characteristic.OccupancyDetected.OCCUPANCY_DETECTED,
     });
 
     this.locksCounter -= 1;
@@ -390,11 +383,7 @@ class MagicOccupancy {
     this.locksCounter += 1;
     this.stop();
 
-    this.occupancyService.setCharacteristic(
-      Characteristic.OccupancyDetected,
-      Characteristic.OccupancyDetected.OCCUPANCY_DETECTED
-    );
-    this._last_occupied_state = true;
+    this._setOccupancyState(true);
 
     if (this.stayOccupiedDelay) {
       this.occupancyService.setCharacteristic(
@@ -414,21 +403,24 @@ class MagicOccupancy {
     this.saveCachedState("_MAIN", {
       '_last_occupied_state': this._last_occupied_state,
       'TimeRemaining' : this.stayOccupiedDelay || 0,
-      'OccupancyDetected': Characteristic.OccupancyDetected.OCCUPANCY_DETECTED,
     });
 
     this.locksCounter -= 1;
+  }
+
+  _setOccupancyState(newVal) {
+    this._last_occupied_state = newVal;
+    this.occupancyService.setCharacteristic(
+      Characteristic.OccupancyDetected,
+      newVal ? Characteristic.OccupationDetected.OCCUPANCY_DETECTED : Characteristic.OccupationDetected.OCCUPANCY_NOT_DETECTED
+    );
   }
 
   setOccupancyNotDetected() {
     this.locksCounter += 1;
     this.stop();
 
-    this.occupancyService.setCharacteristic(
-      Characteristic.OccupancyDetected,
-      Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED
-    );
-    this._last_occupied_state = false;
+    this._setOccupancyState(false);
 
     if (this.stayOccupiedDelay) {
       this.occupancyService.setCharacteristic(Characteristic.TimeRemaining, 0);
@@ -466,7 +458,6 @@ class MagicOccupancy {
     this.saveCachedState("_MAIN", {
       '_last_occupied_state': this._last_occupied_state,
       'TimeRemaining' : 0,
-      'OccupancyDetected': Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED,
     });
 
     this.locksCounter -= 1;
@@ -515,7 +506,6 @@ class MagicOccupancy {
 
         if(this._last_occupied_state == false) {
           this.setOccupancyDetected();
-
         }
 
         this.log(
@@ -526,9 +516,7 @@ class MagicOccupancy {
       if(value == false && result.remainingCount == 0) {
         result.already_acted = true;
 
-        if(this._last_occupied_state == true && this._timer === null) {
-          this.startUnoccupiedDelay();
-        }
+        this.startUnoccupiedDelay();
 
         this.log(
           `checkOccupancy result: false. Previous occupied state: ${previousOccupiedState}, current state: ${this._last_occupied_state}`
@@ -750,8 +738,8 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
               return;
             }
 
-            if(value != (occVal == Characteristic.OccupancyDetected.OCCUPANCY_DETECTED)) {
-              this._service.setCharacteristic(Characteristic.On, (occVal == Characteristic.OccupancyDetected.OCCUPANCY_DETECTED));
+            if(value != this.occupancySensor._last_occupied_state) {
+              this._service.setCharacteristic(Characteristic.On, this.occupancySensor._last_occupied_state);
             }
           }.bind(this));
       }.bind(this))

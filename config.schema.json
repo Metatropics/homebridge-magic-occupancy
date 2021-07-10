@@ -34,7 +34,7 @@
             "lightSwitchesNames": {
                 "default": "",
                 "description": "These switches should be directly linked to light switches (on=on, off=off) and will act like a hybrid of stateful and master shutoff switches",
-                "title": "Names of Motion Switches (Separate by comma)",
+                "title": "Names of Light Switches (Separate by comma)",
                 "type": "string"
             },
             "statefulSwitchesNames": {
