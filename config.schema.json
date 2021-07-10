@@ -31,52 +31,51 @@
                 "title": "Absolute Max Occupation Time (auto-shutoff)",
                 "type": "number"
             },
-            "statefulSwitchesCount": {
+            "lightSwitchesNames": {
                 "default": 1,
+                "description": "These switches should be directly linked to light switches (on=on, off=off) and will act like a hybrid of stateful and master shutoff switches",
+                "title": "Names of Motion Switches (Separate by comma)",
+                "type": "string"
+            },
+            "statefulSwitchesNames": {
+                "default": 0,
                 "description": "These switches activate the occupancy sensor immediately and keep the delay timer from resetting as long as the switch is on.",
-                "title": "Number of Stateful (manual) Switches",
-                "type": "number"
+                "title": "Names of Stateful (manual) Switches (Separate by comma)",
+                "type": "string"
             },
-            "triggerSwitchesCount": {
-                "default": 1,
+            "triggerSwitchesNames": {
+                "default": 0,
                 "description": "These switches activate the occupancy sensor immediately and allow the delay timer to start immediately.",
-                "title": "Number of Trigger Stateless Switches",
-                "type": "number"
+                "title": "Names of Trigger Stateless Switches (Separate by comma)",
+                "type": "string"
             },
-            "motionSwitchesCount": {
-                "default": 1,
+            "motionSwitchesNames": {
+                "default": 0,
                 "description": "These switches should be directly linked to motion sensors (on=on, off=off) and will act like a hybrid of stateful and trigger switches.",
-                "title": "Number of Motion Switches",
-                "type": "number"
+                "title": "Names of Motion Switches (Separate by comma)",
+                "type": "string"
             },
-            "statefulStayOnSwitchesCount": {
-                "default": 1,
+            "statefulStayOnSwitchesNames": {
+                "default": 0,
                 "description": "These switches will keep the delay timer from starting as long as the switch is on if the occupancy sensor is already on, or they will do nothing if not occupied already.",
-                "title": "Number of Stateful Stay-on Switches",
-                "type": "number"
+                "title": "Names of Stateful Stay-on Switches (Separate by comma)",
+                "type": "string"
             },
-            "triggerStayOnSwitchesCount": {
-                "default": 1,
+            "triggerStayOnSwitchesNames": {
+                "default": 0,
                 "description": "These switches will reset the delay if the occupancy sensor is already on, or they will do nothing if not occupied already.",
-                "title": "Number of Trigger Stateless Stay-on Switches",
-                "type": "number"
+                "title": "Names of Trigger Stateless Stay-on Switches (Separate by comma)",
+                "type": "string"
             },
-            "motionStayOnSwitchesCount": {
-                "default": 1,
+            "motionStayOnSwitchesNames": {
+                "default": 0,
                 "description": "These switches should be directly linked to motion sensors (on=on, off=off) and will act like a hybrid of stateful and trigger switches. They will reset the delay if the occupancy sensor is already on, or they will do nothing if not occupied already.",
-                "title": "Number of Motion Stay-on Switches",
-                "type": "number"
-            },
-            "ignoreStatefulIfTurnedOnByTrigger": {
-                "required": true,
-                "default": true,
-                "description": "Whether or not stateful switches should be treated like trigger switches if occupation was turned on by a trigger switch.",
-                "title": "Ignore Stateful if Turned On By Trigger",
-                "type": "boolean"
+                "title": "Names of Motion Stay-on Switches (Separate by comma)",
+                "type": "string"
             },
             "createMasterShutoff": {
                 "required": true,
-                "default": true,
+                "default": false,
                 "description": "Whether or not to create a master shutoff switch. Master shutoff toggled off kills occupancy immediately when toggled on.",
                 "title": "Create Master Shutoff",
                 "type": "boolean"
