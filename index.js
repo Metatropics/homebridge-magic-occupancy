@@ -578,19 +578,24 @@ class BaseHelperSwitch {
     this._offDelayTimer = null;
 
 
-    this._service.setCharacteristic(Characteristic.On, this.occupancySensor.getCachedState('PMS-' + this.name, false));
+    this._is_on = this.occupancySensor.getCachedState('PMS-' + this.name, false);
+    this._service.setCharacteristic(Characteristic.On, this._is_on);
 
     this._service.addCharacteristic(Characteristic.KeepingOccupancyTriggered);
-    this.keepingOccupancyTriggered = this.occupancySensor.getCachedState('PMS-KOT-' + this.name, false);
-    this._service.setCharacteristic(
-      Characteristic.KeepingOccupancyTriggered,
-      this.keepingOccupancyTriggered
-    );
+    this._service.getCharacteristic(Characteristic.KeepingOccupancyTriggered)
+      .onGet(async () => {
+        return this._getIsKeepingOccupancyTriggered();
+      });
 
     //Attach to changes
     this._service.getCharacteristic(Characteristic.On)
       .on('set', this._internalStateChangeTrigger.bind(this));
 
+  }
+
+  _getIsKeepingOccupancyTriggered() {
+    //Overwritten in child classes
+    return this._is_on;
   }
 
   _killOccupancy() {
@@ -619,6 +624,9 @@ class BaseHelperSwitch {
       this.log.debug(`Callback error - ${error}`)
     }
 
+    //Store new state
+    this._is_on = on;
+
     //Make sure we're actually full initialized
     if(!this.occupancySensor.initializationCompleted) {
       this.log.debug("Setting " + this.name + " initial state and bypassing all events");
@@ -637,12 +645,6 @@ class BaseHelperSwitch {
     this._handleNewState(on);
   }
 
-  _setKeepingOccupancyTriggered(newVal) {
-    this.keepingOccupancyTriggered = newVal;
-    this._service.setCharacteristic(Characteristic.KeepingOccupancyTriggered, newVal);
-    this.occupancySensor.saveCachedState('PMS-KOT-' + this.name, newVal);
-  }
-
   _handleNewState(on) {
     //Overwritten in child classes
   }
@@ -655,13 +657,7 @@ class StatefulSwitch extends BaseHelperSwitch {
   }
 
   _handleNewState(on) {
-    if(!on && !this.keepingOccupancyTriggered) {
-      return;
-    }
-
     const isValidOn = on && (!this.stayOnOnly || this.occupancySensor._last_occupied_state == true);
-
-    this._setKeepingOccupancyTriggered(isValidOn);
 
     if(isValidOn) {
       this._setOccupancyOn();
@@ -671,20 +667,19 @@ class StatefulSwitch extends BaseHelperSwitch {
       this.occupancySensor.checkOccupancy(10);
     }
   }
+
+  _getIsKeepingOccupancyTriggered() {
+    return this._is_on && (!config.stayOnOnly || this.occupancySensor._last_occupied_state == true);
+  }
 }
 
 class TriggerSwitch extends BaseHelperSwitch {
   constructor(occupancySensor, config) {
     super(occupancySensor, config);
     this.stayOnOnly = config.stayOnOnly || false;
-    this._setKeepingOccupancyTriggered(false);
   }
 
   _handleNewState(on) {
-    if(!on && !this.keepingOccupancyTriggered) {
-      return;
-    }
-
     if(on && (!this.stayOnOnly || this.occupancySensor._last_occupied_state == true)) {
       this._setOccupancyOn();
     }
@@ -694,6 +689,10 @@ class TriggerSwitch extends BaseHelperSwitch {
         this._service.setCharacteristic(Characteristic.On, false);
       }.bind(this), this.occupancySensor.triggerSwitchToggleTimeout);
     }
+  }
+
+  _getIsKeepingOccupancyTriggered() {
+    return false;
   }
 }
 
@@ -705,13 +704,7 @@ class MotionSensorSwitch extends BaseHelperSwitch {
   }
 
   _handleNewState(on) {
-    if(!on && !this.keepingOccupancyTriggered) {
-      return;
-    }
-
     const isValidOn = on && (!this.stayOnOnly || this.occupancySensor._last_occupied_state == true);
-
-    this._setKeepingOccupancyTriggered(isValidOn);
 
     if(isValidOn) {
       this._setOccupancyOn();
@@ -721,12 +714,17 @@ class MotionSensorSwitch extends BaseHelperSwitch {
       this.occupancySensor.checkOccupancy(10);
     }
   }
+
+  _getIsKeepingOccupancyTriggered() {
+    return this._is_on && (!config.stayOnOnly || this.occupancySensor._last_occupied_state == true);
+  }
 }
 
 
 class LightSwitchMirrorSwitch extends BaseHelperSwitch {
   constructor(occupancySensor, config) {
     super(occupancySensor, config);
+    this.wasTheInitialTriggerSwitch = false;
 
     //Make this switch match the big boi
     this.occupancySensor.occupancyService.getCharacteristic(Characteristic.OccupancyDetected)
@@ -758,16 +756,20 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
 
   _handleNewState(on) {
     if(on && this.occupancySensor._last_occupied_state == false) {
-      this._setKeepingOccupancyTriggered(true);
+      this.wasTheInitialTriggerSwitch = true;
 
       this._setOccupancyOn();
     }
 
     //Handle turning off the whole system with this switch
     if(!on) {
-      this._setKeepingOccupancyTriggered(false);
+      this.wasTheInitialTriggerSwitch = false;
       this._killOccupancy();
     }
+  }
+
+  _getIsKeepingOccupancyTriggered() {
+    return this._is_on && this.wasTheInitialTriggerSwitch;
   }
 }
 
@@ -775,7 +777,6 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
 class MasterShutoffSwitch extends BaseHelperSwitch {
   constructor(occupancySensor, config) {
     super(occupancySensor, config);
-    this._setKeepingOccupancyTriggered(false);
   }
 
   _handleNewState(on) {
@@ -785,5 +786,9 @@ class MasterShutoffSwitch extends BaseHelperSwitch {
         this._service.setCharacteristic(Characteristic.On, false);
       }.bind(this), this.occupancySensor.triggerSwitchToggleTimeout);
     }
+  }
+
+  _getIsKeepingOccupancyTriggered() {
+    return false;
   }
 }
