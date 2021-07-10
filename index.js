@@ -547,7 +547,7 @@ class MagicOccupancy {
         .getValue(function(err, value) {
           if (err) {
             this.log(
-              `ERROR GETTING VALUE ${err}`
+              `ERROR GETTING VALUE Characteristic.KeepingOccupancyTriggered ${err}`
             );
             value = false;
           }
@@ -608,11 +608,11 @@ class BaseHelperSwitch {
 
   _killOccupancy() {
     this.occupancySensor.locksCounter += 1;
-      this.occupancySensor.setOccupancyNotDetected();
-      setTimeout(function() {
-        this.occupancySensor.checkOccupancy();
-        this.occupancySensor.locksCounter -= 1;
-      }.bind(this), 10);
+    this.occupancySensor.setOccupancyNotDetected();
+    setTimeout(function() {
+      this.occupancySensor.checkOccupancy();
+      this.occupancySensor.locksCounter -= 1;
+    }.bind(this), 10);
   }
 
   _setOccupancyOn() {
@@ -743,9 +743,9 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
         this._service
           .getCharacteristic(Characteristic.On)
           .getValue(function(err, value) {
-            if (!err) {
+            if (err) {
               this.log(
-                `ERROR GETTING VALUE ${err}`
+                `ERROR GETTING VALUE Characteristic.On ${err}`
               );
               return;
             }
@@ -780,8 +780,8 @@ class MasterShutoffSwitch extends BaseHelperSwitch {
   }
 
   _handleNewState(on) {
-    this._killOccupancy();
     if(on) {
+      this._killOccupancy();
       this._offDelayTimer = setTimeout(function() {
         this._service.setCharacteristic(Characteristic.On, false);
       }.bind(this), this.occupancySensor.triggerSwitchToggleTimeout);

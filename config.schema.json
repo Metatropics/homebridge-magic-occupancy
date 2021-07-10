@@ -32,7 +32,7 @@
                 "type": "number"
             },
             "lightSwitchesNames": {
-                "default": "LightSwitch",
+                "default": "",
                 "description": "These switches should be directly linked to light switches (on=on, off=off) and will act like a hybrid of stateful and master shutoff switches",
                 "title": "Names of Motion Switches (Separate by comma)",
                 "type": "string"
@@ -50,7 +50,7 @@
                 "type": "string"
             },
             "motionSwitchesNames": {
-                "default": "MotionSensor",
+                "default": "",
                 "description": "These switches should be directly linked to motion sensors (on=on, off=off) and will act like a hybrid of stateful and trigger switches.",
                 "title": "Names of Motion Switches (Separate by comma)",
                 "type": "string"
