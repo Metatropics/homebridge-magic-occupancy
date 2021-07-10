@@ -2,6 +2,7 @@
 [![npm version](https://badge.fury.io/js/homebridge-magic-occupancy.svg)](https://badge.fury.io/js/homebridge-magic-occupancy)
 [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 
+**DO NOT UPDATE TO 3.0 BETA UNLESS YOU ARE OKAY WITH ALL YOUR PLUGIN CONFIGS BEING RESET TO DEFAULTS WHICH WILL LOSE ANY AUTOMATIONS YOU SET UP IN THE HOME APP**
 
 ## How to install
 
