@@ -753,7 +753,7 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
             if(value != (occVal == Characteristic.OccupancyDetected.OCCUPANCY_DETECTED)) {
               this._service.setCharacteristic(Characteristic.On, (occVal == Characteristic.OccupancyDetected.OCCUPANCY_DETECTED));
             }
-          });
+          }.bind(this));
       }.bind(this))
   }
 
