@@ -669,7 +669,7 @@ class StatefulSwitch extends BaseHelperSwitch {
   }
 
   _getIsKeepingOccupancyTriggered() {
-    return this._is_on && (!config.stayOnOnly || this.occupancySensor._last_occupied_state == true);
+    return this._is_on && (!this.stayOnOnly || this.occupancySensor._last_occupied_state == true);
   }
 }
 
@@ -716,7 +716,7 @@ class MotionSensorSwitch extends BaseHelperSwitch {
   }
 
   _getIsKeepingOccupancyTriggered() {
-    return this._is_on && (!config.stayOnOnly || this.occupancySensor._last_occupied_state == true);
+    return this._is_on && (!this.stayOnOnly || this.occupancySensor._last_occupied_state == true);
   }
 }
 
