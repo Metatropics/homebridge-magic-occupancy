@@ -95,7 +95,7 @@ module.exports = function (homebridge) {
 class MagicOccupancy {
   constructor(log, config) {
     this.log = log;
-    this.name = config.name || "MagicOccupancy";
+    this.name = config.name.trim() || "MagicOccupancy";
     this.lightSwitchesNames = (config.lightSwitchesNames || "").split(",");
     this.statefulSwitchesNames = (config.statefulSwitchesNames || "").split(",");
     this.triggerSwitchesNames = (config.triggerSwitchesNames || "").split(",");
@@ -564,8 +564,8 @@ class BaseHelperSwitch {
   constructor(occupancySensor, config) {
     this.log = occupancySensor.log;
     this.occupancySensor = occupancySensor;
-    this.name = occupancySensor.name + " " + config.name;
-    this._service = new Service.Switch(this.name, this.name);
+    this.name = occupancySensor.name.trim() + " " + config.name.trim();
+    this._service = new Service.Switch(this.name.trim(), this.name.trim());
 
     this._offDelayTimer = null;
 

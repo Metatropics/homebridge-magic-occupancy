@@ -32,43 +32,43 @@
                 "type": "number"
             },
             "lightSwitchesNames": {
-                "default": 1,
+                "default": "LightSwitch",
                 "description": "These switches should be directly linked to light switches (on=on, off=off) and will act like a hybrid of stateful and master shutoff switches",
                 "title": "Names of Motion Switches (Separate by comma)",
                 "type": "string"
             },
             "statefulSwitchesNames": {
-                "default": 0,
+                "default": "",
                 "description": "These switches activate the occupancy sensor immediately and keep the delay timer from resetting as long as the switch is on.",
                 "title": "Names of Stateful (manual) Switches (Separate by comma)",
                 "type": "string"
             },
             "triggerSwitchesNames": {
-                "default": 0,
+                "default": "",
                 "description": "These switches activate the occupancy sensor immediately and allow the delay timer to start immediately.",
                 "title": "Names of Trigger Stateless Switches (Separate by comma)",
                 "type": "string"
             },
             "motionSwitchesNames": {
-                "default": 0,
+                "default": "MotionSensor",
                 "description": "These switches should be directly linked to motion sensors (on=on, off=off) and will act like a hybrid of stateful and trigger switches.",
                 "title": "Names of Motion Switches (Separate by comma)",
                 "type": "string"
             },
             "statefulStayOnSwitchesNames": {
-                "default": 0,
+                "default": "",
                 "description": "These switches will keep the delay timer from starting as long as the switch is on if the occupancy sensor is already on, or they will do nothing if not occupied already.",
                 "title": "Names of Stateful Stay-on Switches (Separate by comma)",
                 "type": "string"
             },
             "triggerStayOnSwitchesNames": {
-                "default": 0,
+                "default": "",
                 "description": "These switches will reset the delay if the occupancy sensor is already on, or they will do nothing if not occupied already.",
                 "title": "Names of Trigger Stateless Stay-on Switches (Separate by comma)",
                 "type": "string"
             },
             "motionStayOnSwitchesNames": {
-                "default": 0,
+                "default": "",
                 "description": "These switches should be directly linked to motion sensors (on=on, off=off) and will act like a hybrid of stateful and trigger switches. They will reset the delay if the occupancy sensor is already on, or they will do nothing if not occupied already.",
                 "title": "Names of Motion Stay-on Switches (Separate by comma)",
                 "type": "string"
