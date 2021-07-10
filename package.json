@@ -1,6 +1,6 @@
 {
   "name": "homebridge-magic-occupancy",
-  "version": "3.0.0-beta2",
+  "version": "3.0.0-beta3",
   "description": "Occupancy sensor linked to several trigger types to allow customizable situations: https://github.com/Jason-Morcos/homebridge-magic-occupancy",
   "main": "index.js",
   "license": "GPL-3.0",
