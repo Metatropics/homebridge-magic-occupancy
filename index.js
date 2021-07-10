@@ -43,7 +43,7 @@ module.exports = function (homebridge) {
     Characteristic.call(
       this,
       "Post-Activity Timeout Delay",
-      "2100006D-0000-1000-8000-0026BB765291"
+      "94a765c6-e114-11eb-ba80-0242ac130004"
     );
     this.setProps({
       format: Characteristic.Formats.UINT64,
@@ -60,7 +60,7 @@ module.exports = function (homebridge) {
     this.value = this.getDefaultValue();
   };
   inherits(Characteristic.TimeoutDelay, Characteristic);
-  Characteristic.TimeoutDelay.UUID = "2100006D-0000-1000-8000-0026BB765291";
+  Characteristic.TimeoutDelay.UUID = "94a765c6-e114-11eb-ba80-0242ac130004";
 
     /**
    * Characteristic "Keeping Occupancy Triggered"
@@ -633,7 +633,7 @@ class BaseHelperSwitch {
     }
 
     //Handle off switch canceling timer
-    if(off && this._offDelayTimer) {
+    if(!on && this._offDelayTimer) {
       clearTimeout(this._offDelayTimer);
       this._offDelayTimer = null;
     }
@@ -676,7 +676,7 @@ class StatefulSwitch extends BaseHelperSwitch {
       this._setOccupancyOn();
     }
 
-    if(off && this.occupancySensor._last_occupied_state == true) {
+    if(!on && this.occupancySensor._last_occupied_state == true) {
       this.occupancySensor.checkOccupancy(10);
     }
   }
@@ -726,7 +726,7 @@ class MotionSensorSwitch extends BaseHelperSwitch {
       this._setOccupancyOn();
     }
 
-    if(off && this.occupancySensor._last_occupied_state == true) {
+    if(!on && this.occupancySensor._last_occupied_state == true) {
       this.occupancySensor.checkOccupancy(10);
     }
   }
@@ -740,15 +740,18 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
     //Make this switch match the big boi
     this.occupancySensor.occupancyService.getCharacteristic(Characteristic.OccupancyDetected)
       .on('set', function(occVal, callback) {
-        this._service.getValue(function(err, value) {
+        this._service
+          .getCharacteristic(Characteristic.On)
+          .getValue(function(err, value) {
             if (!err) {
-              if(value != (occVal == Characteristic.OccupancyDetected.OCCUPANCY_DETECTED)) {
-                this._service.setCharacteristic(Characteristic.On, (occVal == Characteristic.OccupancyDetected.OCCUPANCY_DETECTED));
-              }
-            } else {
               this.log(
                 `ERROR GETTING VALUE ${err}`
               );
+              return;
+            }
+
+            if(value != (occVal == Characteristic.OccupancyDetected.OCCUPANCY_DETECTED)) {
+              this._service.setCharacteristic(Characteristic.On, (occVal == Characteristic.OccupancyDetected.OCCUPANCY_DETECTED));
             }
           });
       }.bind(this))
@@ -762,7 +765,7 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
     }
 
     //Handle turning off the whole system with this switch
-    if(off) {
+    if(!on) {
       this._setKeepingOccupancyTriggered(false);
       this._killOccupancy();
     }
