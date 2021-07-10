@@ -491,7 +491,6 @@ class MagicOccupancy {
     const previousOccupiedState = this._last_occupied_state;
     this.log.debug(`checking occupancy. Total: ${switchesToCheck.length} switches`);
 
-    /* callback for when all the switchServices values have been returned */
     var result = {'already_acted': false, 'remainingCount': switchesToCheck.length};
 
     var handleResponse = function(value) {
@@ -524,7 +523,7 @@ class MagicOccupancy {
       }
     }.bind(this);
 
-    /* look at all the trigger switchServices "KeepingOccupancyTriggered" characteristic and return to callback */
+    /* look at all the trigger switchServices "KeepingOccupancyTriggered" characteristic */
     for (let i = 0; i < switchesToCheck.length; i += 1) {
       if(result.already_acted) {
         break;
@@ -613,10 +612,16 @@ class BaseHelperSwitch {
   }
 
   _internalStateChangeTrigger(on, callback) {
+    //execute callback
+    try {
+      callback();
+    } catch (error) {
+      this.log.debug(`Callback error - ${error}`)
+    }
+
     //Make sure we're actually full initialized
     if(!this.occupancySensor.initializationCompleted) {
       this.log.debug("Setting " + this.name + " initial state and bypassing all events");
-      callback();
       return;
     }
 
@@ -630,8 +635,6 @@ class BaseHelperSwitch {
     this.occupancySensor.saveCachedState('PMS-' + this.name, on);
 
     this._handleNewState(on);
-
-    callback();
   }
 
   _setKeepingOccupancyTriggered(newVal) {
@@ -728,7 +731,12 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
     //Make this switch match the big boi
     this.occupancySensor.occupancyService.getCharacteristic(Characteristic.OccupancyDetected)
       .on('set', function(occVal, callback) {
-        callback();
+        //execute callback
+        try {
+          callback();
+        } catch (error) {
+          this.log.debug(`Callback error - ${error}`)
+        }
 
         this._service
           .getCharacteristic(Characteristic.On)
