@@ -22,7 +22,7 @@ module.exports = function (homebridge) {
     this.setProps({
       format: Characteristic.Formats.UINT64,
       unit: Characteristic.Units.SECONDS,
-      maxValue: 3600,
+      maxValue: 2147483647,
       minValue: 0,
       minStep: 1,
       perms: [
@@ -48,7 +48,7 @@ module.exports = function (homebridge) {
     this.setProps({
       format: Characteristic.Formats.UINT64,
       unit: Characteristic.Units.SECONDS,
-      maxValue: 3600,
+      maxValue: 2147483647,
       minValue: 0,
       minStep: 1,
       perms: [
@@ -99,11 +99,9 @@ class MagicOccupancy {
     this.lightSwitchesNames = (config.lightSwitchesNames || "").split(",");
     this.statefulSwitchesNames = (config.statefulSwitchesNames || "").split(",");
     this.triggerSwitchesNames = (config.triggerSwitchesNames || "").split(",");
-    this.motionSwitchesNames = (config.motionSwitchesNames || "").split(",");
     this.statefulStayOnSwitchesNames = (config.statefulStayOnSwitchesNames || "").split(",");
     this.triggerStayOnSwitchesNames = (config.triggerStayOnSwitchesNames || "").split(",");
-    this.motionStayOnSwitchesNames = (config.motionStayOnSwitchesNames || "").split(",");
-    this.stayOccupiedDelay = Math.min(3600, Math.max(0, parseInt(config.stayOccupiedDelay || 0, 10) || 0));
+    this.stayOccupiedDelay = Math.max(0, parseInt(config.stayOccupiedDelay || 0, 10) || 0);
     this.maxOccupationTimeout = Math.max(0, parseInt(config.maxOccupationTimeout || 0, 10) || 0)
     this.persistBetweenReboots = config.persistBetweenReboots != false;
     this.startOnReboot = config.startOnReboot || false;
@@ -142,7 +140,7 @@ class MagicOccupancy {
     this.occupancyService.addCharacteristic(Characteristic.TimeoutDelay);
     this.occupancyService.setCharacteristic(
       Characteristic.TimeoutDelay,
-      this.stayOccupiedDelay
+      Math.min(2147483647, this.stayOccupiedDelay)
     );
     this.occupancyService
       .getCharacteristic(Characteristic.TimeoutDelay)
@@ -153,7 +151,7 @@ class MagicOccupancy {
 
     this.occupancyService.addCharacteristic(Characteristic.TimeRemaining);
     if(this.stayOccupiedDelay) {
-      this.occupancyService.setCharacteristic(Characteristic.TimeRemaining, savedState.TimeRemaining);
+      this.occupancyService.setCharacteristic(Characteristic.TimeRemaining, Math.min(2147483647, savedState.TimeRemaining));
     }
 
     //Restore past state
@@ -207,19 +205,6 @@ class MagicOccupancy {
         }))._service);
       }.bind(this));
     }
-    /* Make the motionSwitches */
-    if(this.motionSwitchesNames.length > 0) {
-      this.log.debug("Making " + this.motionSwitchesNames.length + " Motion trigger switchServices");
-      this.motionSwitchesNames.forEach(function(switchName) {
-        if(switchName.length == 0) {
-          return true; //continue
-        }
-        this.switchServices.push((new MotionSensorSwitch(this, {
-            name: switchName,
-            stayOnOnly: false,
-        }))._service);
-      }.bind(this));
-    }
 
     /* Make the statefulStayOnSwitches */
     if(this.statefulStayOnSwitchesNames.length > 0) {
@@ -242,19 +227,6 @@ class MagicOccupancy {
           return true; //continue
         }
         this.switchServices.push((new TriggerSwitch(this, {
-            name: switchName,
-            stayOnOnly: true,
-        }))._service);
-      }.bind(this));
-    }
-    /* Make the motionStayOnSwitches */
-    if(this.motionStayOnSwitchesNames.length > 0) {
-      this.log.debug("Making " + this.motionStayOnSwitchesNames.length + " StayOn Motion trigger switchServices");
-      this.motionStayOnSwitchesNames.forEach(function(switchName) {
-        if(switchName.length == 0) {
-          return true; //continue
-        }
-        this.switchServices.push((new MotionSensorSwitch(this, {
             name: switchName,
             stayOnOnly: true,
         }))._service);
@@ -319,7 +291,7 @@ class MagicOccupancy {
       if (newValue !== this._interval_last_value) {
         this.occupancyService.setCharacteristic(
           Characteristic.TimeRemaining,
-          newValue
+          Math.min(2147483647, newValue)
         );
         this._interval_last_value = newValue;
 
@@ -693,30 +665,6 @@ class TriggerSwitch extends BaseHelperSwitch {
 
   _getIsKeepingOccupancyTriggered() {
     return false;
-  }
-}
-
-
-class MotionSensorSwitch extends BaseHelperSwitch {
-  constructor(occupancySensor, config) {
-    super(occupancySensor, config);
-    this.stayOnOnly = config.stayOnOnly || false;
-  }
-
-  _handleNewState(on) {
-    const isValidOn = on && (!this.stayOnOnly || this.occupancySensor._last_occupied_state == true);
-
-    if(isValidOn) {
-      this._setOccupancyOn();
-    }
-
-    if(!on && this.occupancySensor._last_occupied_state == true) {
-      this.occupancySensor.checkOccupancy(10);
-    }
-  }
-
-  _getIsKeepingOccupancyTriggered() {
-    return this._is_on && (!this.stayOnOnly || this.occupancySensor._last_occupied_state == true);
   }
 }
 
