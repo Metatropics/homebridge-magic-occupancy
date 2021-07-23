@@ -48,7 +48,7 @@ This package exposes an occupation sensor with six different types of triggers. 
 - **"Light" Switch:** These switches are designed to be paired with a light switch in a room where the occupancy sensor is used to turn the lights on (when lights on -> turn on "Light" Switch, when lights off -> turn off "Light" Switch). This switch will ALWAYS match the state of the occupancy sensor. If this type of switch is the one to activate occupancy, occupancy will stay active as long as this switch is turned on. However, if occupancy is triggered by another switch, this "Light" switch will not keep occupancy active (but occupancy will remain active as long as other switches are active). "Light" switches instantly end occupancy when switched off, much like the Master Shutoff Switch ends occupancy when turned on. See use case below for more details.
 - **Master Shutoff Switch:** Master shutoff toggled off kills occupancy immediately when toggled on. This will flip all other switches to "off" instantly as well.
 
-
+### More Info on Switches:
 When the stateful switch is turned on, the occupation sensor is turned on. When the stateful switch then turns off, the occupation sensor stays on for a customizable number of seconds which can be 0 (the Stay Occupied Delay).
 
 When a trigger stateless switch is turned on, it stays on for a second before automatically turning on. When one of these switches turns on, it turns on the occupancy sensor while it's on and the occupancy sensor continues to stay on for the Stay Occupied Delay after the trigger finishes. This one is really useful for triggering with a motion detected event. You can use any combination of actions from these two types of switches to keep the occupation sensor on.
