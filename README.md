@@ -38,14 +38,14 @@ Also, ideally if you turned on the lights manually they would never turn off (or
 That's what this plugin does
 
 This package exposes an occupation sensor with six different types of triggers. You can combine any of them to create any behavior you'd like. There are four types of simple switches and two types of complex switches.
-Simple Switches:
+### Simple Switches:
 - **Stateful (manual) Switch:** These switches activate the occupancy sensor immediately and keep the delay timer from resetting as long as the switch is on.
 - **Trigger Stateless Switch:** These switches activate the occupancy sensor immediately and allow the delay timer to start immediately.
 - **Stateful Stay-on Switches:** These switches will keep the delay timer from starting as long as the switch is on if the occupancy sensor is already on, or they will do nothing if not occupied already.
 - **Trigger Stay-on Switches:** These switches will reset the delay if the occupancy sensor is already on, or they will do nothing if not occupied already.
 
-Complex Switches:
-- **"Light" Switch:** These switches are designed to be paired with a light switch in a room where the occupancy sensor is used to turn the lights on (when lights on -> turn on "Light" Switch, when lights off -> turn off "Light" Switch). This switch will ALWAYS match the state of the occupancy sensor. If this type of switch is the one to activate occupancy, occupancy will stay active as long as this switch is turned on. However, if occupancy is triggered by another switch, this "Light" switch will not keep occupancy active (but occupancy will remain active as long as other switches are active). See use case below for more details.
+### Complex Switches:
+- **"Light" Switch:** These switches are designed to be paired with a light switch in a room where the occupancy sensor is used to turn the lights on (when lights on -> turn on "Light" Switch, when lights off -> turn off "Light" Switch). This switch will ALWAYS match the state of the occupancy sensor. If this type of switch is the one to activate occupancy, occupancy will stay active as long as this switch is turned on. However, if occupancy is triggered by another switch, this "Light" switch will not keep occupancy active (but occupancy will remain active as long as other switches are active). "Light" switches instantly end occupancy when switched off, much like the Master Shutoff Switch ends occupancy when turned on. See use case below for more details.
 - **Master Shutoff Switch:** Master shutoff toggled off kills occupancy immediately when toggled on. This will flip all other switches to "off" instantly as well.
 
 
