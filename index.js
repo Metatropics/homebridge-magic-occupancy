@@ -119,10 +119,7 @@ class MagicOccupancy {
       forgiveParseErrors: true,
     });
 
-    const savedState = this.getCachedState("_MAIN", {
-      '_last_occupied_state': false,
-      'TimeRemaining' : 0,
-    })
+    const savedState = this._getInitialMainCacheState();
 
     this._timer = null;
     this._timer_started = null;
@@ -255,12 +252,34 @@ class MagicOccupancy {
       }.bind(this), 10000);
     }
     //Handle restoring state - gotta restart the decaying timer if we rebooted
-    else if (this.persistBetweenReboots && this._last_occupied_state == true) {
+    else if (this.persistBetweenReboots && savedState.ModeState == "UnoccupiedDelay") {
       this.startUnoccupiedDelay(this.stayOccupiedDelay ? savedState.TimeRemaining : 0);
     }
 
     //Do an initial occupancy check
     this.checkOccupancy(10);
+  }
+
+  //Helper to get a cached state value
+  _getInitialMainCacheState() {
+    const defaultState = {
+      '_last_occupied_state': false,
+      'TimeRemaining' : 0,
+      'ModeState': "Unoccupied",
+    };
+    try {
+      var state = this.getCachedState("_MAIN", defaultState);
+
+      //Handle migrating a v1 cache
+      if(!("ModeState" in state)) {
+        state.ModeState = (defaultState._last_occupied_state == true) ? "UnoccupiedDelay" : "Unoccupied";
+      }
+
+      return state;
+    } catch (error) {
+      this.log.debug(`Error initializing past state, falling back on default - ${error}`);
+      return defaultState;
+    }
   }
 
   /**
@@ -297,14 +316,16 @@ class MagicOccupancy {
 
         this.saveCachedState("_MAIN", {
           '_last_occupied_state': this._last_occupied_state,
-          'TimeRemaining' : newValue,
+          'TimeRemaining': newValue,
+          'ModeState': "UnoccupiedDelay",
         });
       }
     }, 250);
 
     this.saveCachedState("_MAIN", {
       '_last_occupied_state': this._last_occupied_state,
-      'TimeRemaining' : this.stayOccupiedDelay,
+      'TimeRemaining': this.stayOccupiedDelay,
+      'ModeState': "UnoccupiedDelay",
     });
 
     this.locksCounter -= 1;
@@ -328,6 +349,7 @@ class MagicOccupancy {
   //Helper to get a cached state value
   getCachedState(key, defaultValue) {
     if(!this.persistBetweenReboots) {
+      this.log.debug(`Persistence disabled - ignoring cached value for ${key}`);
       return defaultValue;
     }
     this.log.debug(`Loading cached value for ${key}`);
@@ -342,10 +364,6 @@ class MagicOccupancy {
   }
   //Helper to set/save a cached state value
   saveCachedState(key, value) {
-    if(!this.persistBetweenReboots) {
-      return;
-    }
-
     setTimeout(function() {
       this.storage.setItemSync(this.name + '-HMO-' + key, value);
     }.bind(this), 10);
@@ -375,6 +393,7 @@ class MagicOccupancy {
     this.saveCachedState("_MAIN", {
       '_last_occupied_state': this._last_occupied_state,
       'TimeRemaining' : this.stayOccupiedDelay || 0,
+      'ModeState': "Occupied",
     });
 
     this.locksCounter -= 1;
@@ -430,6 +449,7 @@ class MagicOccupancy {
     this.saveCachedState("_MAIN", {
       '_last_occupied_state': this._last_occupied_state,
       'TimeRemaining' : 0,
+      'ModeState': "Unoccupied",
     });
 
     this.locksCounter -= 1;
@@ -515,7 +535,7 @@ class MagicOccupancy {
       }.bind(this));
     }
 
-    if(switchesToCheck.length == 0 && this._last_occupied_state == true) {
+    if(switchesToCheck.length == 0 && this._last_occupied_state == true && result.already_acted == false) {
       this.startUnoccupiedDelay();
 
       this.log(
