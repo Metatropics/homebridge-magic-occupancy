@@ -514,13 +514,6 @@ class MagicOccupancy {
         }
 
         //Turn all switches off
-        for (let i = 0; i < this.switchServices.length; i += 1) {
-            this.isClearingOccupancy = true;
-            this.switchServices[i].setCharacteristic(Characteristic.On, false);
-            this.isClearingOccupancy = false;
-        }
-
-        //Turn all switches off
         var shutoff_switch = aSwitch => {
             aSwitch
                 .getCharacteristic(Characteristic.On)
