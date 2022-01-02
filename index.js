@@ -569,7 +569,8 @@ class MagicOccupancy {
         this.locksCounter += 1
 
         const switchesToCheck = this.switchServices;
-        const previousModeState = this.modeState;
+        //Interpolate string to copy
+        const previousModeState = `${this.modeState}`;
         this.log.debug(`checking occupancy. Total: ${switchesToCheck.length} switches`);
 
         var result = {
