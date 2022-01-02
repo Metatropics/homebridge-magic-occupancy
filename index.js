@@ -582,7 +582,7 @@ class MagicOccupancy {
                 }
 
                 this.log(
-                    `checkOccupancy result: true. Previous mode state: ${previousModeState}, current state: ${this.modeState}`
+                    `checkOccupancy result: true. Previous state: ${previousModeState}, current state: ${this.modeState}`
                 );
             }
 
@@ -594,7 +594,7 @@ class MagicOccupancy {
                 }
 
                 this.log(
-                    `checkOccupancy result: false. Previous mode state: ${previousModeState}, current state: ${this.modeState}`
+                    `checkOccupancy result: false. Previous state: ${previousModeState}, current state: ${this.modeState}`
                 );
             }
         }.bind(this);
@@ -655,7 +655,8 @@ class BaseHelperSwitch {
         this.occupancySensor = occupancySensor;
         this.name = occupancySensor.name.trim() + ' ' + config.name.trim();
         this._service = new Service.Switch(this.name.trim(), this.name.trim());
-
+        
+        this.isStateful = true;
         this._offDelayTimer = null;
 
         this._is_on = this.occupancySensor.getCachedState('PMS-' + this.name, false);
@@ -719,6 +720,9 @@ class BaseHelperSwitch {
             this._is_on = on;
         }
 
+        //Handle off switch canceling timer
+        this._handleOffDelayTimer();
+
         //Make sure we're actually full initialized
         if (!this.occupancySensor.initializationCompleted) {
             this.log.debug(
@@ -729,12 +733,6 @@ class BaseHelperSwitch {
 
         //Figure out if events should be suppressed
         const suppressEvents = this.occupancySensor.isClearingOccupancy && on == false;
-
-        //Handle off switch canceling timer
-        if (!suppressEvents && !on && this._offDelayTimer) {
-            clearTimeout(this._offDelayTimer)
-            this._offDelayTimer = null
-        }
 
         //Handle specific events
         if(!suppressEvents) {
@@ -747,6 +745,24 @@ class BaseHelperSwitch {
         }
     }
 
+    _handleOffDelayTimer(on) {
+        //Cancel if the timer exists first, always
+        if (this._offDelayTimer) {
+            clearTimeout(this._offDelayTimer);
+            this._offDelayTimer = null;
+        }
+
+        //Turn on the off delay timer if the switch is on
+        if(on && !this.isStateful) {
+            this._offDelayTimer = setTimeout(
+                function () {
+                    this._service.setCharacteristic(Characteristic.On, false)
+                }.bind(this),
+                this.occupancySensor.triggerSwitchToggleTimeout
+            );
+        }
+    }
+
     _handleNewState (on, previousOn) {
         //Overwritten in child classes
     }
@@ -754,21 +770,21 @@ class BaseHelperSwitch {
 
 class StatefulSwitch extends BaseHelperSwitch {
     constructor (occupancySensor, config) {
-        super(occupancySensor, config)
-        this.stayOnOnly = config.stayOnOnly || false
+        super(occupancySensor, config);
+        this.stayOnOnly = config.stayOnOnly || false;
     }
 
     _handleNewState (on, previousOn) {
         const isValidOn =
             on &&
-            (!this.stayOnOnly || this.occupancySensor.modeState != 'Unoccupied')
+            (!this.stayOnOnly || this.occupancySensor.modeState != 'Unoccupied');
 
         if (isValidOn) {
-            this._setOccupancyOn()
+            this._setOccupancyOn();
         }
 
         if (!on && this.occupancySensor.modeState != 'Unoccupied') {
-            this.occupancySensor.checkOccupancy(10)
+            this.occupancySensor.checkOccupancy(10);
         }
     }
 
@@ -776,14 +792,15 @@ class StatefulSwitch extends BaseHelperSwitch {
         return (
             this._is_on &&
             (!this.stayOnOnly || this.occupancySensor.modeState != 'Unoccupied')
-        )
+        );
     }
 }
 
 class TriggerSwitch extends BaseHelperSwitch {
     constructor (occupancySensor, config) {
-        super(occupancySensor, config)
-        this.stayOnOnly = config.stayOnOnly || false
+        super(occupancySensor, config);
+        this.stayOnOnly = config.stayOnOnly || false;
+        this.isStateful = false;
     }
 
     _handleNewState (on, previousOn) {
@@ -791,28 +808,19 @@ class TriggerSwitch extends BaseHelperSwitch {
             on &&
             (!this.stayOnOnly || this.occupancySensor.modeState != 'Unoccupied')
         ) {
-            this._setOccupancyOn()
-        }
-
-        if (on) {
-            this._offDelayTimer = setTimeout(
-                function () {
-                    this._service.setCharacteristic(Characteristic.On, false)
-                }.bind(this),
-                this.occupancySensor.triggerSwitchToggleTimeout
-            )
+            this._setOccupancyOn();
         }
     }
 
     _getIsKeepingOccupancyTriggered () {
-        return false
+        return false;
     }
 }
 
 class LightSwitchMirrorSwitch extends BaseHelperSwitch {
     constructor (occupancySensor, config) {
-        super(occupancySensor, config)
-        this.wasTheInitialTriggerSwitch = this.occupancySensor.getCachedState('PMS-wasInit-' + this.name, false)
+        super(occupancySensor, config);
+        this.wasTheInitialTriggerSwitch = this.occupancySensor.getCachedState('PMS-wasInit-' + this.name, false);
 
         //Make this switch match the big boi
         this.occupancySensor.occupancyService
@@ -836,7 +844,7 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
                         )
                     }
                 }.bind(this)
-            )
+            );
     }
 
     _handleNewState (on, previousOn) {
@@ -867,17 +875,12 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
 class MasterShutoffSwitch extends BaseHelperSwitch {
     constructor (occupancySensor, config) {
         super(occupancySensor, config)
+        this.isStateful = false;
     }
 
     _handleNewState (on, previousOn) {
         if (on) {
             this._killOccupancy();
-            this._offDelayTimer = setTimeout(
-                function () {
-                    this._service.setCharacteristic(Characteristic.On, false)
-                }.bind(this),
-                this.occupancySensor.triggerSwitchToggleTimeout
-            );
         }
     }
 
