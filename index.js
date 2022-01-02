@@ -357,7 +357,11 @@ class MagicOccupancy {
      * startUnoccupiedDelays the countdown timer.
      */
     startUnoccupiedDelay (overrideTimeRemaining = null) {
-        const timeRemaining = overrideTimeRemaining ?? this.stayOccupiedDelay ?? 0;
+        var timeRemaining = this.stayOccupiedDelay ?? 0;
+        if(overrideTimeRemaining != null && overrideTimeRemaining < timeRemaining) {
+            timeRemaining = overrideTimeRemaining;
+        }
+
         if (timeRemaining <= 0) {
             this.setOccupancyNotDetected();
             return;
@@ -371,11 +375,11 @@ class MagicOccupancy {
         this.stop();
 
         this._timer_started = new Date().getTime();
-        this.log('Timer startUnoccupiedDelayed:', this.stayOccupiedDelay);
+        this.log('Timer startUnoccupiedDelayed:', timeRemaining);
 
         this._timer = setTimeout(
             this.setOccupancyNotDetected.bind(this),
-            Math.round(this.stayOccupiedDelay * 1000)
+            Math.round(timeRemaining * 1000)
         );
         this._timer_delay = timeRemaining;
         this._interval = setInterval(() => {
@@ -397,7 +401,7 @@ class MagicOccupancy {
         }, 250);
 
         this.saveCachedState('_MAIN', {
-            TimeRemaining: this.stayOccupiedDelay,
+            TimeRemaining: timeRemaining,
             ModeState: 'UnoccupiedDelay'
         });
 
