@@ -318,6 +318,14 @@ class MagicOccupancy {
                 this.stayOccupiedDelay ? savedState.TimeRemaining : 0
             );
         }
+        //Handle restoring state - gotta restart the max runtime timer if we rebooted
+        else if (this.persistBetweenReboots && savedState.ModeState == 'Occupied') {
+            this.setOccupancyDetected();
+        }
+        //Handle restoring state - gotta make sure all the timers are stopped
+        else if (this.persistBetweenReboots && savedState.ModeState == 'Occupied') {
+            this.setOccupancyNotDetected();
+        }
 
         //Do an initial occupancy check
         this.checkOccupancy(10);
