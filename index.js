@@ -483,7 +483,7 @@ class MagicOccupancy {
 
         this.occupancyService.setCharacteristic(
             Characteristic.OccupancyDetected,
-            newVal === 'Occupied'
+            newVal != 'Unoccupied'
                 ? Characteristic.OccupancyDetected.OCCUPANCY_DETECTED
                 : Characteristic.OccupancyDetected.OCCUPANCY_NOT_DETECTED
         );
