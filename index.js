@@ -520,6 +520,23 @@ class MagicOccupancy {
             this.isClearingOccupancy = false;
         }
 
+        //Turn all switches off
+        var shutoff_switch = aSwitch => {
+            aSwitch
+                .getCharacteristic(Characteristic.On)
+                .getValue(function (err, value) {
+                    //Error or still on, turn it off
+                    if (err || value) {
+                        this.isClearingOccupancy = true;
+                        aSwitch.setCharacteristic(Characteristic.On, false);
+                        this.isClearingOccupancy = false;
+                    }
+                });
+        }
+        for (let i = 0; i < this.switchServices.length; i += 1) {
+            shutoff_switch(this.switchServices[i]);
+        }
+
         //Save state
         this.saveCachedState('_MAIN', {
             TimeRemaining: 0,
