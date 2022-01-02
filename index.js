@@ -490,6 +490,7 @@ class MagicOccupancy {
     }
 
     setOccupancyNotDetected () {
+        var _this = this;
         this.locksCounter += 1;
         this.stop();
 
@@ -520,9 +521,9 @@ class MagicOccupancy {
                 .getValue(function (err, value) {
                     //Error or still on, turn it off
                     if (err || value) {
-                        this.isClearingOccupancy = true;
+                        _this.isClearingOccupancy = true;
                         aSwitch.setCharacteristic(Characteristic.On, false);
-                        this.isClearingOccupancy = false;
+                        _this.isClearingOccupancy = false;
                     }
                 });
         }
