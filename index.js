@@ -662,16 +662,16 @@ class MagicOccupancy {
 }
 
 class BaseHelperSwitch {
-    constructor (occupancySensor, config) {
+    constructor (occupancySensor, config, isStateful) {
         this.log = occupancySensor.log;
         this.occupancySensor = occupancySensor;
         this.name = occupancySensor.name.trim() + ' ' + config.name.trim();
         this._service = new Service.Switch(this.name.trim(), this.name.trim());
         
-        this.isStateful = true;
+        this.isStateful = isStateful;
         this._offDelayTimer = null;
 
-        this._is_on = this.occupancySensor.getCachedState('PMS-' + this.name, false);
+        this._is_on = this.isStateful ? this.occupancySensor.getCachedState('PMS-' + this.name, false) : false;
         this._service.setCharacteristic(Characteristic.On, this._is_on);
 
         this._service.addCharacteristic(Characteristic.KeepingOccupancyTriggered);
@@ -733,7 +733,7 @@ class BaseHelperSwitch {
         }
 
         //Handle off switch canceling timer
-        this._handleOffDelayTimer();
+        this._handleOffDelayTimer(on);
 
         //Make sure we're actually full initialized
         if (!this.occupancySensor.initializationCompleted) {
@@ -752,7 +752,7 @@ class BaseHelperSwitch {
         }
 
         //Cache our previous state for restoration
-        if(on != previousOn) {
+        if(on != previousOn && this.isStateful) {
             this.occupancySensor.saveCachedState('PMS-' + this.name, on);
         }
     }
@@ -782,7 +782,7 @@ class BaseHelperSwitch {
 
 class StatefulSwitch extends BaseHelperSwitch {
     constructor (occupancySensor, config) {
-        super(occupancySensor, config);
+        super(occupancySensor, config, true);
         this.stayOnOnly = config.stayOnOnly || false;
     }
 
@@ -810,9 +810,8 @@ class StatefulSwitch extends BaseHelperSwitch {
 
 class TriggerSwitch extends BaseHelperSwitch {
     constructor (occupancySensor, config) {
-        super(occupancySensor, config);
+        super(occupancySensor, config, false);
         this.stayOnOnly = config.stayOnOnly || false;
-        this.isStateful = false;
     }
 
     _handleNewState (on, previousOn) {
@@ -831,7 +830,7 @@ class TriggerSwitch extends BaseHelperSwitch {
 
 class LightSwitchMirrorSwitch extends BaseHelperSwitch {
     constructor (occupancySensor, config) {
-        super(occupancySensor, config);
+        super(occupancySensor, config, true);
         this.wasTheInitialTriggerSwitch = this.occupancySensor.getCachedState('PMS-wasInit-' + this.name, false);
 
         //Make this switch match the big boi
@@ -886,8 +885,7 @@ class LightSwitchMirrorSwitch extends BaseHelperSwitch {
 
 class MasterShutoffSwitch extends BaseHelperSwitch {
     constructor (occupancySensor, config) {
-        super(occupancySensor, config)
-        this.isStateful = false;
+        super(occupancySensor, config, false)
     }
 
     _handleNewState (on, previousOn) {
