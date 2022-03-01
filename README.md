@@ -2,7 +2,7 @@
 [![npm version](https://badge.fury.io/js/homebridge-magic-occupancy.svg)](https://badge.fury.io/js/homebridge-magic-occupancy)
 [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 
-**DO NOT UPDATE TO v3 UNLESS YOU ARE OKAY WITH ALL YOUR PLUGIN CONFIGS BEING RESET TO DEFAULTS WHICH WILL LOSE ANY AUTOMATIONS YOU SET UP IN THE HOME APP. v3 IS A SIGNIFICANT REWRITE AND OFFERS DIFFERENT OPTIONS THAN v2 WHICH ARE VERY POWERFUL BUT REQUIRE A MANUAL UPGRADE**
+**IF YOU ARE AN EXISTING USER OF HOMEBRIDGE-MAGIC-OCCUPANCY v2, DO NOT UPDATE TO v3 OF THIS PLUGIN UNLESS YOU ARE OKAY WITH YOUR PREVIOUS SETTINGS FOR THIS PLUGIN  BEING RESET TO DEFAULTS WHICH WILL LOSE ANY AUTOMATIONS YOU SET UP IN THE HOME APP BASED ON v2 SWITCHES AND SENSORS. v3 IS A SIGNIFICANT REWRITE AND OFFERS DIFFERENT OPTIONS THAN v2 WHICH ARE VERY POWERFUL BUT REQUIRE A MANUAL UPGRADE**
 
 ## How to install
 
@@ -28,6 +28,7 @@
         }
     ]
 ```
+To create multiple occupancy sensors in Homebridge X UI, scroll to the bottom of the plugin's settings and click the "Add Another" button to setup additional full Magic Occupancy configurations.
 
 ## What problem will this solve?
 
