@@ -113,7 +113,7 @@ class MagicOccupancy {
             0,
             parseInt(config.maxOccupationTimeout ?? 0, 10) ?? 0
         );
-        this.serial = config.serial === undefined ? config.name.replace(/\s/g, '') : config.serial;
+        this.serial = config.serial ?? config.name.replace(/\s/g, '');
         this.persistBetweenReboots = config.persistBetweenReboots != false;
         this.startOnReboot = config.startOnReboot || false;
         this.triggerSwitchToggleTimeout = 1000;
