@@ -141,13 +141,14 @@ class MagicOccupancy {
 
         this.switchServices = [];
         this.occupancyService = new Service.OccupancySensor(this.name);
+        const serial = this.name;
         this.informationService = new Service.AccessoryInformation()
             .setCharacteristic(
                 Characteristic.Manufacturer,
                 'https://github.com/Jason-Morcos/homebridge-magic-occupancy'
             )
             .setCharacteristic(Characteristic.Model, '2')
-            .setCharacteristic(Characteristic.SerialNumber, 'JmoMagicOccupancySwitch');
+            .setCharacteristic(Characteristic.SerialNumber, serial.replace(/\s/g, ''));
 
         this.occupancyService.addCharacteristic(Characteristic.TimeoutDelay);
         this.occupancyService.setCharacteristic(
