@@ -113,7 +113,7 @@ class MagicOccupancy {
             0,
             parseInt(config.maxOccupationTimeout ?? 0, 10) ?? 0
         );
-        this.serial = config.serial ?? 'JmoMagicOccupancySwitch';
+        this.serial = config.serial.trim() ?? 'JmoMagicOccupancySwitch';
         this.persistBetweenReboots = config.persistBetweenReboots != false;
         this.startOnReboot = config.startOnReboot || false;
         this.triggerSwitchToggleTimeout = 1000;
