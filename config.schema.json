@@ -10,6 +10,7 @@
             },
             "serial": {
                 "required": false,
+                "description": "Serial for the occupancy sensor (changing this will break existing HomeKit automations), defaults to 'JmoMagicOccupancySwitch'.",
                 "title": "Serial",
                 "type": "string"
             },
