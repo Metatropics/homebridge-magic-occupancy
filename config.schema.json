@@ -8,6 +8,12 @@
                 "title": "Name",
                 "type": "string"
             },
+            "serial": {
+                "required": false,
+                "description": "Serial for the occupancy sensor (changing this will break existing HomeKit automations), defaults to 'JmoMagicOccupancySwitch'.",
+                "title": "Serial",
+                "type": "string"
+            },
             "stayOccupiedDelay": {
                 "default": 60,
                 "description": "How long in seconds the room should stay occupied after all switches turn off. Set 0 to shutoff as soon as not occupied.",
