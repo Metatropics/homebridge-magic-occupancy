@@ -113,6 +113,7 @@ class MagicOccupancy {
             0,
             parseInt(config.maxOccupationTimeout ?? 0, 10) ?? 0
         );
+        this.serial = config.serial.trim() ?? 'JmoMagicOccupancySwitch';
         this.persistBetweenReboots = config.persistBetweenReboots != false;
         this.startOnReboot = config.startOnReboot || false;
         this.triggerSwitchToggleTimeout = 1000;
@@ -147,7 +148,7 @@ class MagicOccupancy {
                 'https://github.com/Jason-Morcos/homebridge-magic-occupancy'
             )
             .setCharacteristic(Characteristic.Model, '2')
-            .setCharacteristic(Characteristic.SerialNumber, 'JmoMagicOccupancySwitch');
+            .setCharacteristic(Characteristic.SerialNumber, this.serial);
 
         this.occupancyService.addCharacteristic(Characteristic.TimeoutDelay);
         this.occupancyService.setCharacteristic(

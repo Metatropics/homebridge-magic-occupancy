@@ -8,6 +8,11 @@
                 "title": "Name",
                 "type": "string"
             },
+            "serial": {
+                "required": false,
+                "title": "Serial",
+                "type": "string"
+            },
             "stayOccupiedDelay": {
                 "default": 60,
                 "description": "How long in seconds the room should stay occupied after all switches turn off. Set 0 to shutoff as soon as not occupied.",
