@@ -4,6 +4,9 @@
 
 **IF YOU ARE AN EXISTING USER OF HOMEBRIDGE-MAGIC-OCCUPANCY v2, DO NOT UPDATE TO v3 OF THIS PLUGIN UNLESS YOU ARE OKAY WITH YOUR PREVIOUS SETTINGS FOR THIS PLUGIN  BEING RESET TO DEFAULTS WHICH WILL LOSE ANY AUTOMATIONS YOU SET UP IN THE HOME APP BASED ON v2 SWITCHES AND SENSORS. v3 IS A SIGNIFICANT REWRITE AND OFFERS DIFFERENT OPTIONS THAN v2 WHICH ARE VERY POWERFUL BUT REQUIRE A MANUAL UPGRADE**
 
+_This plugin allows you to create complex automations leveraging motion sensors and switches in tandem, helpful for making your lights feel like "magic". If you want the bathroom fan to turn off a few minutes after the lights, this plugin is for you. If you want the lights in your house to turn on when you're pulling up to the driveway and then stay on as long as you're walking around the house, this plugin is for you. If you want your lights to stay on for a few minutes if triggered by motion or forever if triggered manually by a light switch, this plugin is for you. Now go automate some magic!_
+
+
 ## How to install
 
  ```sudo npm install -g homebridge-magic-occupancy```
