@@ -55,7 +55,7 @@ This package exposes an occupation sensor with six different types of triggers. 
 ### More Info on Switches:
 When the stateful switch is turned on, the occupation sensor is turned on. When the stateful switch then turns off, the occupation sensor stays on for a customizable number of seconds which can be 0 (the Stay Occupied Delay).
 
-When a trigger stateless switch is turned on, it stays on for a second before automatically turning on. When one of these switches turns on, it turns on the occupancy sensor while it's on and the occupancy sensor continues to stay on for the Stay Occupied Delay after the trigger finishes. This one is really useful for triggering with a motion detected event. You can use any combination of actions from these two types of switches to keep the occupation sensor on.
+When a trigger stateless switch is turned on, it stays on for a second before automatically turning off. When one of these switches turns on, it turns on the occupancy sensor while it's on and the occupancy sensor continues to stay on for the Stay Occupied Delay after the trigger finishes. This one is really useful for triggering with a motion detected event. You can use any combination of actions from these two types of switches to keep the occupation sensor on.
 
 The other two types of simple switches, Stateful and Trigger Stay-on Switches, act just like their non Stay-on siblings with one key difference - they can't activate the occupation sensor, only keep it active. These are useful, for example, if you have a hallway light that you want to turn on when the garage opens and keep on then as long as you have motion anywhere in the house (but you wouldn't want motion in the house to normally turn the light on).
 
