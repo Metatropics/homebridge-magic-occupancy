@@ -95,6 +95,7 @@ module.exports = function (homebridge) {
 class MagicOccupancy {
     constructor (log, config) {
         this.log = log;
+        this.occupancyLogging = config.occupancyLogging ?? true;
         this.name = config.name.trim() ?? 'MagicOccupancy';
         this.lightSwitchesNames = (config.lightSwitchesNames ?? '').split(',');
         this.statefulSwitchesNames = (config.statefulSwitchesNames ?? '').split(',');
@@ -487,7 +488,7 @@ class MagicOccupancy {
 
         // Log when the state changes to Occupied or Unoccupied
         if (this.modeState == 'Occupied' && this.previousModeState == 'Unoccupied' || this.modeState == 'Unoccupied') {
-            this.log(`Setting state to ${this.modeState}`)
+            this.occupancyLogging && this.log(`Setting state to ${this.modeState}`)
         }
 
         this.occupancyService.setCharacteristic(
