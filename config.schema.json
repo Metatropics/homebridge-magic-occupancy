@@ -27,7 +27,7 @@
             },
             "occupancyLogging": {
                 "default": true,
-                "description": "Write logs when a sensor becomes occupied or unoccupied.",
+                "description": "Write logs when the occupancy sensor becomes occupied or unoccupied.",
                 "title": "Occupancy Logging",
                 "type": "boolean"
             },
