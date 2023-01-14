@@ -481,15 +481,16 @@ class MagicOccupancy {
     }
 
     _setOccupancyState (newVal) {
-        // Capture previous state and set the new state
+        // Capture the previous state and determine if the state change should be logged
         this.previousModeState = this.modeState;
+        this.occupancyLoggingCondition = (newVal == 'Occupied' && this.previousModeState == 'Unoccupied' || newVal == 'Unoccupied')
+        if (this.occupancyLogging && this.occupancyLoggingCondition) {
+            this.log(`Setting state to ${newVal}`)
+        }
+
+        // Set the new state
         this.modeState = newVal;
         this.log.debug(`Previous state was ${this.previousModeState} and is now ${this.modeState}`)
-
-        // Log when the state changes to Occupied or Unoccupied
-        if (this.modeState == 'Occupied' && this.previousModeState == 'Unoccupied' || this.modeState == 'Unoccupied') {
-            this.occupancyLogging && this.log(`Setting state to ${this.modeState}`)
-        }
 
         this.occupancyService.setCharacteristic(
             Characteristic.OccupancyDetected,
