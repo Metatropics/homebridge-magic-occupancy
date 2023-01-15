@@ -483,8 +483,8 @@ class MagicOccupancy {
     _setOccupancyState (newVal) {
         // Capture the previous state and determine if the state change should be logged
         this.previousModeState = this.modeState;
-        this.occupancyLoggingCondition = (newVal == 'Occupied' && this.previousModeState == 'Unoccupied' || newVal == 'Unoccupied')
-        if (this.occupancyLogging && this.occupancyLoggingCondition) {
+        const occupancyLoggingCondition = (newVal == 'Occupied' && this.previousModeState == 'Unoccupied' || newVal == 'Unoccupied')
+        if (this.occupancyLogging && occupancyLoggingCondition) {
             this.log(`Setting state to ${newVal}`)
         }
 
