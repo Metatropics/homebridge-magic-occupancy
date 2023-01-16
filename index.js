@@ -95,6 +95,7 @@ module.exports = function (homebridge) {
 class MagicOccupancy {
     constructor (log, config) {
         this.log = log;
+        this.occupancyLogging = config.occupancyLogging ?? true;
         this.name = config.name.trim() ?? 'MagicOccupancy';
         this.lightSwitchesNames = (config.lightSwitchesNames ?? '').split(',');
         this.statefulSwitchesNames = (config.statefulSwitchesNames ?? '').split(',');
@@ -158,7 +159,7 @@ class MagicOccupancy {
         this.occupancyService
             .getCharacteristic(Characteristic.TimeoutDelay)
             .on('change', event => {
-                this.log('Setting stay occupied delay to:', event.newValue)
+                this.log.debug('Setting stay occupied delay to:', event.newValue)
                 this.stayOccupiedDelay = event.newValue
             });
 
@@ -177,7 +178,7 @@ class MagicOccupancy {
             .getCharacteristic(Characteristic.TimeRemaining)
             .on('change', event => {
                 if (event.newValue === 0 && event.oldValue > 0) {
-                    this.log('Cancel timer and set occupancy to "NotDetected"')
+                    this.log.debug('Cancel timer and set occupancy to "NotDetected"')
                     this.setOccupancyNotDetected()
                 }
             });
@@ -303,7 +304,7 @@ class MagicOccupancy {
 
         //Handle start on reboot
         if (this.startOnReboot) {
-            this.log(`startOnReboot==true - setting to active`)
+            this.log.debug(`startOnReboot==true - setting to active`)
             //Run the set after homebridge should have booted to ensure events fire
             setTimeout(
                 function () {
@@ -376,7 +377,7 @@ class MagicOccupancy {
         this.stop();
 
         this._timer_started = new Date().getTime();
-        this.log('Timer startUnoccupiedDelayed:', timeRemaining);
+        this.log.debug('Timer startUnoccupiedDelayed:', timeRemaining);
 
         this._timer = setTimeout(
             this.setOccupancyNotDetected.bind(this),
@@ -414,7 +415,7 @@ class MagicOccupancy {
      */
     stop () {
         if (this._timer) {
-            this.log('Delay timer stopped');
+            this.log.debug('Delay timer stopped');
             clearTimeout(this._timer);
             clearInterval(this._interval);
             this._timer = null;
@@ -480,7 +481,16 @@ class MagicOccupancy {
     }
 
     _setOccupancyState (newVal) {
+        // Capture the previous state and determine if the state change should be logged
+        this.previousModeState = this.modeState;
+        const occupancyLoggingCondition = (newVal == 'Occupied' && this.previousModeState == 'Unoccupied' || newVal == 'Unoccupied')
+        if (this.occupancyLogging && occupancyLoggingCondition) {
+            this.log(`Setting state to ${newVal}`)
+        }
+
+        // Set the new state
         this.modeState = newVal;
+        this.log.debug(`Previous state was ${this.previousModeState} and is now ${this.modeState}`)
 
         this.occupancyService.setCharacteristic(
             Characteristic.OccupancyDetected,
@@ -510,7 +520,7 @@ class MagicOccupancy {
 
         //Clear max timeout
         if (this._max_occupation_timer != null) {
-            this.log('Max occupation timer stopped');
+            this.log.debug('Max occupation timer stopped');
             clearTimeout(this._max_occupation_timer);
             this._max_occupation_timer = null;
         }
@@ -594,7 +604,7 @@ class MagicOccupancy {
                     this.setOccupancyDetected();
                 }
 
-                this.log(
+                this.log.debug(
                     `checkOccupancy result: true. Previous state: ${previousModeState}, current state: ${this.modeState}`
                 );
             }
@@ -606,7 +616,7 @@ class MagicOccupancy {
                     this.startUnoccupiedDelay();
                 }
 
-                this.log(
+                this.log.debug(
                     `checkOccupancy result: false. Previous state: ${previousModeState}, current state: ${this.modeState}`
                 );
             }
@@ -623,7 +633,7 @@ class MagicOccupancy {
                 .getValue(
                     function (err, value) {
                         if (err) {
-                            this.log(
+                            this.log.debug(
                                 `ERROR GETTING VALUE Characteristic.KeepingOccupancyTriggered ${err}`
                             )
                             value = false
@@ -641,7 +651,7 @@ class MagicOccupancy {
         ) {
             this.startUnoccupiedDelay();
 
-            this.log(
+            this.log.debug(
                 `checkOccupancy result: false (0 switches). Previous occupied state: ${previousModeState}, current state: ${this.modeState}`
             );
         }

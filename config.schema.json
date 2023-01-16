@@ -25,6 +25,12 @@
                 "title": "Absolute Max Occupation Time (auto-shutoff)",
                 "type": "number"
             },
+            "occupancyLogging": {
+                "default": true,
+                "description": "Write logs when the occupancy sensor becomes occupied or unoccupied.",
+                "title": "Occupancy Logging",
+                "type": "boolean"
+            },
             "persistBetweenReboots": {
                 "default": true,
                 "description": "Whether the occupancy sensor and its switches should restore their previous states on Homebridge restart",
