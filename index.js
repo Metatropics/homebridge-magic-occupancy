@@ -94,7 +94,13 @@ module.exports = function (homebridge) {
 
 class MagicOccupancy {
     constructor (log, config) {
-        this.log = log;
+        var prevLog = log;
+        this.log = function() {
+            prevLog(...arguments);
+        };
+        this.log.debug = function() {
+            prevLog.debug(...arguments);
+        };
         this.occupancyLogging = config.occupancyLogging ?? true;
         this.name = config.name.trim() ?? 'MagicOccupancy';
         this.lightSwitchesNames = (config.lightSwitchesNames ?? '').split(',');

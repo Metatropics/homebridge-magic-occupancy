@@ -20,8 +20,14 @@
   "engines": {
     "homebridge": ">=0.2.5"
   },
+  "scripts": {
+    "watch": "npm link && nodemon"
+  },
   "dependencies": {
     "node-persist": "^2.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
   },
   "funding": {
     "type": "github",
