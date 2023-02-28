@@ -3,9 +3,16 @@
 var inherits = require('util').inherits;
 var Service, Characteristic, HomebridgeAPI;
 
+const logInfo = require('debug')('magic-occupancy:info');
+const debug = require('debug');
+const logDebug = debug('magic-occupancy:debug');
+const util = require('util');
+const chalk = require('chalk');
+process.env.FORCE_COLOR = true;
 // OccupancyTriggerSwitch is 100% based on https://github.com/nfarina/homebridge-dummy
 
 module.exports = function (homebridge) {
+ 
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
     HomebridgeAPI = homebridge;
@@ -95,11 +102,17 @@ module.exports = function (homebridge) {
 class MagicOccupancy {
     constructor (log, config) {
         var prevLog = log;
+
         this.log = function() {
+            logInfo(`[${chalk.cyan(config.name)}]`,...arguments);
             prevLog(...arguments);
         };
         this.log.debug = function() {
+            logDebug(`[${chalk.cyan(config.name)}]`,...arguments);
             prevLog.debug(...arguments);
+        };
+        debug.formatArgs = function (args) {
+           args[0] = '[' + new Date().toLocaleString("en-US") + '] ' + args[0];       
         };
         this.occupancyLogging = config.occupancyLogging ?? true;
         this.name = config.name.trim() ?? 'MagicOccupancy';

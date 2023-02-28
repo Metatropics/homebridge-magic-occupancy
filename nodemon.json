@@ -1,0 +1,8 @@
+{
+    "ignore": [],
+    "exec": "sudo hb-service restart",
+    "signal": "SIGTERM",
+    "env": {
+      "NODE_OPTIONS": "--trace-warnings"
+    }
+}
