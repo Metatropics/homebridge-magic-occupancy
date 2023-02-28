@@ -3,8 +3,8 @@
 var inherits = require('util').inherits;
 var Service, Characteristic, HomebridgeAPI;
 
-const logInfo = require('debug')('magic-occupancy:info');
 const debug = require('debug');
+const logInfo = debug('magic-occupancy:info');
 const logDebug = debug('magic-occupancy:debug');
 const util = require('util');
 const chalk = require('chalk');
