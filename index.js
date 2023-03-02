@@ -8,6 +8,7 @@ const logInfo = debug('magic-occupancy:info');
 const logDebug = debug('magic-occupancy:debug');
 const util = require('util');
 const chalk = require('chalk');
+
 process.env.FORCE_COLOR = true;
 // OccupancyTriggerSwitch is 100% based on https://github.com/nfarina/homebridge-dummy
 
@@ -102,14 +103,19 @@ module.exports = function (homebridge) {
 class MagicOccupancy {
     constructor (log, config) {
         var prevLog = log;
-
         this.log = function() {
-            logInfo(`[${chalk.cyan(config.name)}]`,...arguments);
-            prevLog(...arguments);
+            if(logInfo.enabled){
+                logInfo(`[${chalk.cyan(config.name)}]`,...arguments);
+            } else {
+                prevLog(...arguments);
+            }
         };
         this.log.debug = function() {
-            logDebug(`[${chalk.cyan(config.name)}]`,...arguments);
-            prevLog.debug(...arguments);
+            if(logDebug.enabled){
+                logDebug(`[${chalk.cyan(config.name)}]`,...arguments);
+            } else {
+                prevLog.debug(...arguments);
+            }
         };
         debug.formatArgs = function (args) {
            args[0] = '[' + new Date().toLocaleString("en-US") + '] ' + args[0];       
