@@ -105,14 +105,14 @@ class MagicOccupancy {
         var prevLog = log;
         this.log = function() {
             if(logInfo.enabled){
-                logInfo(`[${chalk.cyan(config.name)}]`,...arguments);
+                logInfo(`${chalk.cyan('['+config.name+']')} ${chalk.magenta('[INFO]')}`,...arguments);
             } else {
                 prevLog(...arguments);
             }
         };
         this.log.debug = function() {
             if(logDebug.enabled){
-                logDebug(`[${chalk.cyan(config.name)}]`,...arguments);
+                logDebug(`${chalk.cyan('['+config.name+']')} ${chalk.red('[DEBUG]')}`,...arguments);
             } else {
                 prevLog.debug(...arguments);
             }
@@ -120,6 +120,7 @@ class MagicOccupancy {
         debug.formatArgs = function (args) {
            args[0] = '[' + new Date().toLocaleString("en-US") + '] ' + args[0];       
         };
+
         this.occupancyLogging = config.occupancyLogging ?? true;
         this.name = config.name.trim() ?? 'MagicOccupancy';
         this.lightSwitchesNames = (config.lightSwitchesNames ?? '').split(',');
@@ -336,6 +337,14 @@ class MagicOccupancy {
                     this.setOccupancyDetected()
                     this.checkOccupancy(10)
                 }.bind(this),
+     
+     
+     
+     
+     
+     
+     
+     
                 10000
             );
         }
